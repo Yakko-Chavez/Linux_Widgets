@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Rolex Submariner Widget
+Comment=Reloj de escritorio estilo Submariner para Wayland/GNOME
+Exec=python3 /home/chavezh/Vibes/Test/Widgets/rolex_widget.py
+Path=/home/chavezh/Vibes/Test/Widgets
+Icon=appointment-soon
+Terminal=false
+Categories=Utility;
+X-GNOME-Autostart-enabled=true
