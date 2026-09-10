@@ -38,9 +38,9 @@ DEBUG = os.environ.get("SYSMON_DEBUG", "") == "1" or "--debug" in sys.argv
 if "--debug" in sys.argv:
     sys.argv = [a for a in sys.argv if a != "--debug"]
 
-ASPECT = 2.45  # apaisado: 5 diales en horizontal
+ASPECT = 2.7  # apaisado: 6 diales en horizontal
 MIN_H, MAX_H = 260, 500
-DEFAULT_H = 330
+DEFAULT_H = 320
 
 DEFAULT_CONFIG = {
     "height": DEFAULT_H,
@@ -49,6 +49,40 @@ DEFAULT_CONFIG = {
 }
 
 _gpu_cache = {"t": 0.0, "data": None}
+_net_state = {"t": None, "recv": None, "sent": None, "max": 1.0}
+
+
+def _fmt_rate(mbps):
+    if mbps >= 1000:
+        return f"{mbps / 1000:.2f} Gb/s"
+    if mbps >= 1:
+        return f"{mbps:.1f} Mb/s"
+    return f"{mbps * 1000:.0f} Kb/s"
+
+
+def net_rates():
+    """Devuelve (down_mbps, up_mbps, total_mbps, pct) con auto-escala de sesion."""
+    if not HAS_PSUTIL:
+        return None
+    try:
+        io = psutil.net_io_counters()
+        now = time.time()
+        st = _net_state
+        if st["t"] is None:
+            st.update(t=now, recv=io.bytes_recv, sent=io.bytes_sent)
+            return (0.0, 0.0, 0.0, 0.0)
+        dt = max(0.2, now - st["t"])
+        down = (io.bytes_recv - st["recv"]) * 8 / dt / 1e6
+        up = (io.bytes_sent - st["sent"]) * 8 / dt / 1e6
+        down = max(0.0, down)
+        up = max(0.0, up)
+        total = down + up
+        st.update(t=now, recv=io.bytes_recv, sent=io.bytes_sent,
+                  max=max(st["max"], total, 1.0))
+        pct = min(100.0, total / st["max"] * 100.0)
+        return (down, up, total, pct)
+    except Exception:
+        return None
 
 
 def load_config():
@@ -129,6 +163,7 @@ def collect():
     swap_pct, swap_text = 0.0, "--"
     vram_pct, vram_main, vram_sub = 0.0, "N/A", "sin nvidia-smi"
     gpu_pct, gpu_main, gpu_sub = 0.0, "N/A", ""
+    net_pct, net_main, net_sub = 0.0, "0 Kb/s", "↓0 ↑0"
 
     if HAS_PSUTIL:
         try:
@@ -181,6 +216,16 @@ def collect():
         vram_main = f"{vram_pct:.0f}%"
         vram_sub = f"{vu / 1024:.1f}/{vt / 1024:.1f}GB {temp:.0f}C"
 
+    nr = net_rates()
+    if nr:
+        down, up, total, pct = nr
+        net_pct = pct
+        net_main = _fmt_rate(total)
+        if total >= 1:
+            net_sub = f"↓{down:.1f} ↑{up:.1f} Mb/s"
+        else:
+            net_sub = f"↓{down * 1000:.0f} ↑{up * 1000:.0f} Kb/s"
+
     load = ""
     try:
         with open("/proc/loadavg") as f:
@@ -197,6 +242,7 @@ def collect():
             {"label": "VRAM", "pct": vram_pct, "main": vram_main, "sub": vram_sub},
             {"label": "GPU", "pct": gpu_pct, "main": gpu_main, "sub": gpu_sub},
             {"label": "DISCO", "pct": disk_pct, "main": disk_main, "sub": disk_sub},
+            {"label": "RED", "pct": net_pct, "main": net_main, "sub": net_sub},
         ],
         "minis": [
             {"label": "EFI", "pct": efi_pct, "text": efi_text},

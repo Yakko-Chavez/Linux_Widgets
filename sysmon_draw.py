@@ -130,7 +130,7 @@ def _draw_dial(cr, cx, cy, r, label, pct, main, sub):
     # porcentaje debajo del dial (fuera), en dorado
     _text_centered(cr, cx, cy + r * 1.38, main, r * 0.30, GOLD_LIGHT, serif=False)
     if sub:
-        _text_centered(cr, cx, cy + r * 1.62, sub, r * 0.155, MUTED, serif=False, bold=False)
+        _text_centered(cr, cx, cy + r * 1.62, sub, r * 0.135, MUTED, serif=False, bold=False)
 
 
 def _draw_mini(cr, x, y, w, label, pct, text):
@@ -167,10 +167,10 @@ def sysmon_layout(w, h):
     header_h = 58
     footer_h = 58
     area_h = h - header_h - footer_h
-    # 5 diales en horizontal, compactos (textos debajo del dial)
+    # 6 diales en horizontal, compactos (textos debajo del dial)
     cy = header_h + area_h * 0.36
-    xs = [w * (0.11 + 0.195 * i) for i in range(5)]
-    r = min(w * 0.082, area_h * 0.27)
+    xs = [w * (0.085 + 0.166 * i) for i in range(6)]
+    r = min(w * 0.068, area_h * 0.27)
     return {
         "title_y": 32,
         "dials_xy": [(x, cy) for x in xs],

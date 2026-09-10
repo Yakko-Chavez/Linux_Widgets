@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Clima Dorado Widget
+Comment=Clima de Puebla estilo lujo para Wayland/GNOME (Open-Meteo)
+Exec=python3 /home/chavezh/Vibes/Linux_Widgets/clima_widget.py
+Path=/home/chavezh/Vibes/Linux_Widgets
+Icon=/home/chavezh/Vibes/Linux_Widgets/clima-icon.png
+Terminal=false
+Categories=Utility;
+X-GNOME-Autostart-enabled=true
