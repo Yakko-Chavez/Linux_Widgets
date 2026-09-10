@@ -17,10 +17,11 @@ def _ring_gradient(cx, cy, r_outer, light_x=-0.35, light_y=-0.35):
         cx + r_outer * light_x, cy + r_outer * light_y, r_outer * 0.1,
         cx, cy, r_outer,
     )
-    g.add_color_stop_rgb(0.0, 0.95, 0.96, 0.97)
-    g.add_color_stop_rgb(0.45, 0.62, 0.65, 0.69)
-    g.add_color_stop_rgb(0.75, 0.85, 0.87, 0.89)
-    g.add_color_stop_rgb(1.0, 0.32, 0.34, 0.37)
+    # Oro a juego con la Agenda de Lujo (GOLD_LIGHT / GOLD / GOLD_DARK)
+    g.add_color_stop_rgb(0.0, 0.98, 0.90, 0.60)
+    g.add_color_stop_rgb(0.45, 0.79, 0.64, 0.15)
+    g.add_color_stop_rgb(0.75, 0.93, 0.82, 0.45)
+    g.add_color_stop_rgb(1.0, 0.48, 0.37, 0.10)
     return g
 
 
@@ -88,14 +89,14 @@ def draw_rolex(cr, w, h, hour, minute, second_float, day):
     cr.fill()
     cr.restore()
 
-    # --- Caja de acero ---
+    # --- Caja dorada (a juego con la agenda) ---
     cr.save()
     _circle(cr, cx, cy, R)
     cr.set_source(_ring_gradient(cx, cy, R))
     cr.fill()
     # borde fino oscuro
     _circle(cr, cx, cy, R)
-    cr.set_source_rgb(0.15, 0.16, 0.18)
+    cr.set_source_rgb(0.30, 0.22, 0.06)
     cr.set_line_width(max(1.5, R * 0.012))
     cr.stroke()
     cr.restore()
@@ -103,10 +104,10 @@ def draw_rolex(cr, w, h, hour, minute, second_float, day):
     # --- Corona lateral (derecha, a las 3) ---
     cr.save()
     cw, chh = R * 0.10, R * 0.14
-    cr.set_source_rgb(0.55, 0.57, 0.60)
+    cr.set_source_rgb(0.79, 0.64, 0.15)
     cr.rectangle(cx + R - 1, cy - chh / 2, cw, chh)
     cr.fill()
-    cr.set_source_rgb(0.25, 0.26, 0.28)
+    cr.set_source_rgb(0.48, 0.37, 0.10)
     for i in range(3):
         yy = cy - chh / 2 + (i + 0.5) * chh / 3
         cr.move_to(cx + R + 1, yy)
@@ -127,13 +128,13 @@ def draw_rolex(cr, w, h, hour, minute, second_float, day):
     g.add_color_stop_rgb(1, 0.02, 0.025, 0.03)
     cr.set_source(g)
     cr.fill()
-    # anillo acero entre bisel y caja
+    # anillo dorado entre bisel y caja
     _circle(cr, cx, cy, r_bezel_out)
-    cr.set_source_rgb(0.7, 0.72, 0.75)
+    cr.set_source_rgb(0.93, 0.82, 0.45)
     cr.set_line_width(max(1.0, R * 0.008))
     cr.stroke()
     _circle(cr, cx, cy, r_bezel_in)
-    cr.set_source_rgb(0.55, 0.57, 0.6)
+    cr.set_source_rgb(0.79, 0.64, 0.15)
     cr.set_line_width(max(1.0, R * 0.008))
     cr.stroke()
     cr.restore()
@@ -349,7 +350,7 @@ def draw_rolex(cr, w, h, hour, minute, second_float, day):
 
     # --- Eje central ---
     _circle(cr, cx, cy, r_dial * 0.035)
-    cr.set_source_rgb(0.75, 0.77, 0.79)
+    cr.set_source_rgb(0.93, 0.82, 0.45)
     cr.fill()
     _circle(cr, cx, cy, r_dial * 0.018)
     cr.set_source_rgb(0.1, 0.1, 0.11)

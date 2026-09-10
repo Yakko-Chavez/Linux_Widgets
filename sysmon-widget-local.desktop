@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Monitor Dorado Widget
+Comment=Monitor CPU/RAM/VRAM/GPU/Disco estilo lujo para Wayland/GNOME
+Exec=python3 /home/chavezh/Vibes/Linux_Widgets/sysmon_widget.py
+Path=/home/chavezh/Vibes/Linux_Widgets
+Icon=/home/chavezh/Vibes/Linux_Widgets/sysmon-icon.png
+Terminal=false
+Categories=Utility;System;Monitor;
+X-GNOME-Autostart-enabled=true
