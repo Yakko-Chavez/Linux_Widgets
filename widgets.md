@@ -1,13 +1,14 @@
 # Widgets de escritorio — Wayland + GNOME
 
-Reloj Rolex Submariner y Agenda de Lujo: ventanas GTK4 flotantes, sin bordes,
-dibujadas 100% en vectorial con Cairo. Sin imágenes externas.
+Reloj Rolex Submariner, Agenda de Lujo, Clima Dorado y Monitor Dorado:
+ventanas GTK4 flotantes, sin bordes, dibujadas 100% en vectorial con Cairo.
+Sin imágenes externas.
 
 > Nota Wayland/GNOME: `gtk-layer-shell` **no funciona en GNOME**. Son ventanas
 > GTK4 sin decoración, transparentes, que no roban foco. No quedan como fondo
 > real detrás del wallpaper, pero sí flotantes siempre visibles.
 
-## Filosofía común (ambos widgets)
+## Filosofía común (todos los widgets)
 
 - Render en memoria: `pycairo` (ARGB32) → `Gtk.Picture` vía `Gdk.MemoryTexture`
   (`B8G8R8A8_PREMULTIPLIED`). Sin archivos temporales, sin `python3-gi-cairo`.
@@ -15,10 +16,11 @@ dibujadas 100% en vectorial con Cairo. Sin imágenes externas.
 - Movimiento por protocolo Wayland (`surface.begin_move()`); en GNOME también
   vale `Super + arrastrar`.
 - Doble-click / tecla `L`: bloquear (sin arrastre, sin menú, sin botones).
+  Agenda/Clima/Sysmon dibujan candadito dorado vectorial abajo-derecha.
 - Click derecho: menú contextual. `+ / −`: tamaño. `Q / Esc`: salir.
-- Config en JSON con sanitizado de rangos al cargar.
-- Modo `--debug` (o var. `ROLEX_DEBUG=1` / `AGENDA_DEBUG=1`): ventana decorada
-  y con borde para permitir varias instancias.
+- Config en JSON con sanitizado de rangos al cargar + posición `x,y`.
+- Modo `--debug` (o var. `ROLEX_DEBUG=1` / `AGENDA_DEBUG=1` / `CLIMA_DEBUG=1` /
+  `SYSMON_DEBUG=1`): ventana decorada y con borde para permitir varias instancias.
 - Autostart copiando el `.desktop` a `~/.config/autostart/`.
 - Compatibles con la extensión `rolex-below@local`
   (`~/.local/share/gnome-shell/extensions/`), que los mantiene al fondo de la
@@ -29,13 +31,15 @@ dibujadas 100% en vectorial con Cairo. Sin imágenes externas.
 ## Requisitos
 
 - Python 3.14, GTK 4.22, PyGObject, pycairo (ver `requirements.txt`).
-- Si falta algo: `sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-4.0`.
+- `psutil` para el Monitor (`pip install psutil`).
+- `nvidia-smi` opcional para GPU/VRAM reales.
+- Si falta algo: `sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-4.0 python3-psutil`.
 
 ---
 
 ## 1. Rolex Submariner (`rolex_widget.py`)
 
-Reloj analógico estilo Submariner: caja de acero con degradado radial, bisel
+Reloj analógico estilo Submariner: caja dorada con degradado radial, bisel
 negro con marcas y números 10–50, esfera con lume, coronita, textos
 (`ROLEX / OYSTER PERPETUAL / SUBMARINER / 1000ft = 300m`), ventana de fecha a
 las 3 con lupa, manecillas Mercedes/hora/minuto/segundero y reflejo de cristal.
@@ -45,17 +49,17 @@ las 3 con lupa, manecillas Mercedes/hora/minuto/segundero y reflejo de cristal.
 ```bash
 python3 rolex_widget.py
 # o
-./run.sh
+./rolex.sh
 ```
 
 ### Controles
 
 | Acción | Efecto |
 |---|---|
-| Arrastrar (botón izq.) | Mover (Wayland gestiona el move) |
+| Arrastrar (botón izq.) | Mover (Wayland gestiona el move; bloqueado = no mueve) |
 | Click derecho | Menú: sweep, bloquear, tamaño, salir |
 | Doble-click / `L` | Bloquear / desbloquear clicks |
-| `+` / `−` | Tamaño 200–600 px |
+| `+` / `−` | Tamaño 100–600 px |
 | `Q` / `Esc` | Salir |
 
 ### Config (`config.json`)
@@ -65,7 +69,7 @@ python3 rolex_widget.py
 ```
 
 - `sweep: true` = segundero suave (50 ms); `false` = tick cada segundo.
-- `size` se recorta a 200–600; la clave legacy `always_on_top` se ignora
+- `size` se recorta a 100–600; la clave legacy `always_on_top` se ignora
   (Wayland no permite keep-above desde la app).
 
 ### Archivos
@@ -73,7 +77,7 @@ python3 rolex_widget.py
 - `rolex_widget.py` — ventana, timer 50/1000 ms, menú, drag.
   Función clave: `render_texture(size)`; clase `RolexWidget(Gtk.Application)`.
 - `rolex_draw.py` — `draw_rolex(cr, w, h, hour, minute, second_float, day)`.
-- `config.json`, `run.sh`, `rolex-widget.desktop`, `requirements.txt`.
+- `config.json`, `rolex.sh`, `rolex-widget.desktop`, `requirements.txt`.
 
 ---
 
@@ -97,15 +101,15 @@ python3 agenda_widget.py
 
 | Acción | Efecto |
 |---|---|
-| Arrastrar (botón izq.) | Mover (no arrastra desde flechas ni footer) |
+| Arrastrar (botón izq.) | Mover (no arrastra desde flechas ni footer; bloqueado = no mueve) |
 | Botones dorados `‹` `›` | Mes anterior / siguiente (botones GTK reales, glow en hover) |
 | Click en footer (`Hoy · …`) | Volver al mes actual |
 | Click derecho | Menú: mes ±, ir a hoy, bloquear, tamaño, salir |
-| Doble-click / `L` | Bloquear (aparece candadito dorado abajo-derecha) |
+| Doble-click / `L` | Bloquear (aparece candadito dorado vectorial abajo-derecha) |
 | `←` / `→` | Mes anterior / siguiente |
 | `↑` / `↓` | Año anterior / siguiente |
 | `H` / `T` | Volver a hoy |
-| `+` / `−` | Alto 400–800 px (ancho = alto × 0.70) |
+| `+` / `−` | Alto 100–800 px (ancho = alto × 0.70) |
 | `Q` / `Esc` | Salir |
 
 ### Config (`agenda_config.json`)
@@ -116,7 +120,7 @@ python3 agenda_widget.py
 
 - `view_year/view_month: null` = seguir el mes actual; al navegar se guardan,
   "Ir a hoy" los devuelve a `null`.
-- `height` se recorta a 400–800.
+- `height` se recorta a 100–800.
 - Timer de refresco cada 30 s (el calendario no necesita más) + redibujado
   inmediato al navegar, redimensionar o (des)bloquear.
 
@@ -139,19 +143,122 @@ python3 agenda_widget.py
 
 ---
 
+## 3. Clima Dorado (`clima_widget.py`)
+
+Clima de Puebla vía Open-Meteo (sin key): ciudad + icono vectorial grande +
+temperatura + descripción WMO + detalles (sensación/humedad/viento) + tira de
+5 días (máx/mín) + footer de actualización. Estilo cuero negro + dorado.
+
+### Uso
+
+```bash
+python3 clima_widget.py
+# o
+./run_clima.sh
+```
+
+### Controles
+
+| Acción | Efecto |
+|---|---|
+| Arrastrar (botón izq.) | Mover (bloqueado = no mueve) |
+| Click derecho | Menú: actualizar ahora, bloquear, tamaño, salir |
+| Doble-click / `L` | Bloquear (candadito vectorial) |
+| `R` | Forzar fetch Open-Meteo |
+| `+` / `−` | Alto 100–750 px (ancho = alto × 0.62) |
+| `Q` / `Esc` | Salir |
+
+### Config (`clima_config.json`)
+
+```json
+{ "city": "Puebla", "lat": 19.04778, "lon": -98.20723, "height": 540, "locked": false, "opacity": 1.0 }
+```
+
+- `height` 100–750. Fetch en hilo cada 20 min (`FETCH_EVERY`) + cache en
+  `.clima_cache.json`. Sin red muestra `· sin conexión` con último cache.
+- `current_data()` sin fetch fresco marca `offline=True` para no fingir frescura.
+
+### Detalles de implementación
+
+- `fetch_weather()` con `urllib` + `User-Agent`; `parse_payload()` extrae
+  `current` + 5 días siguientes (`daily time/weather_code/max/min`).
+- `refresh_data_async(cfg, on_done)`: hilo daemon + `GLib.idle_add(on_done)`,
+  flag `_state["fetching"]` para no solapar.
+- `draw_clima(cr, w, h, data, locked)`: iconos por código WMO (`_draw_icon`),
+  tira anclada abajo para no dejar hueco.
+
+### Archivos
+
+- `clima_widget.py` — `fetch_weather()`, `parse_payload()`, `current_data()`.
+- `clima_draw.py` — `draw_clima()`, `wmo_label()`.
+- `clima_config.json`, `.clima_cache.json`, `run_clima.sh`, `clima-widget.desktop`.
+
+---
+
+## 4. Monitor Dorado (`sysmon_widget.py`)
+
+Monitor apaisado 6 diales en horizontal: CPU, RAM, VRAM, GPU, DISCO, RED +
+minis EFI/SWAP + footer `load`. Requiere `psutil`; GPU/VRAM vía `nvidia-smi`
+(cache 2 s), si no hay muestra `N/A`.
+
+### Uso
+
+```bash
+python3 sysmon_widget.py
+# o
+./run_sysmon.sh
+```
+
+### Controles
+
+| Acción | Efecto |
+|---|---|
+| Arrastrar (botón izq.) | Mover (bloqueado = no mueve) |
+| Click derecho | Menú: bloquear, tamaño, salir |
+| Doble-click / `L` | Bloquear (candadito vectorial) |
+| `+` / `−` | Alto 100–500 px (ancho = alto × 2.7) |
+| `Q` / `Esc` | Salir |
+
+### Config (`sysmon_config.json`)
+
+```json
+{ "height": 320, "locked": false, "opacity": 1.0 }
+```
+
+- `height` 100–500. Timer 1 s (`restart_timer`).
+- `net_rates()`: derivada de `psutil.net_io_counters()` con auto-escala
+  (`max` de sesión = 100%).
+- `cpu_temp()`: busca `k10temp/coretemp/zenpower/acpitz`.
+
+### Detalles de implementación
+
+- `collect()` junta el dict que espera `draw_sysmon()`: `dials[6]` + `minis[2]`.
+- `sysmon_layout(w,h)`: `title_y`, 6 centros `dials_xy`, radio `r = min(w*0.068, area_h*0.27)`.
+- `_draw_dial()`: aro dorado radial + ticks 270° (135°→405°) + arco valor con
+  gradiente + aguja + textos `main/sub` fuera del dial.
+
+### Archivos
+
+- `sysmon_widget.py` — `collect()`, `net_rates()`, `query_nvidia()`, `cpu_temp()`.
+- `sysmon_draw.py` — `draw_sysmon()`, `sysmon_layout()`.
+- `sysmon_config.json`, `run_sysmon.sh`, `sysmon-widget.desktop`.
+
+---
+
 ## Autostart en GNOME
 
 ```bash
-cp rolex-widget.desktop ~/.config/autostart/
-cp agenda-widget.desktop ~/.config/autostart/
+cp rolex-widget.desktop agenda-widget.desktop clima-widget.desktop sysmon-widget.desktop ~/.config/autostart/
 ```
 
 (Revisar que `Exec=` apunte a la ruta real.)
 
 ## Solución de problemas
 
-- **No veo la ventana**: buscar `Rolex Submariner` / `Agenda de Lujo` con
-  `Alt+Tab` o en Activities/Overview; probar con `--debug`.
+- **No veo la ventana**: buscar `Rolex Submariner` / `Agenda de Lujo` / `Clima Dorado` /
+  `Monitor Dorado` con `Alt+Tab` o en Activities/Overview; probar con `--debug`.
 - **Parece "muerto" (no responde)**: está bloqueado — doble-click o tecla `L`.
-  La agenda muestra un candadito dorado cuando está bloqueada.
-- **Logs**: ambos imprimen a stdout (`[rolex]…` / `[agenda] vista -> …`).
+  Agenda/Clima/Sysmon muestran candadito dorado vectorial cuando están bloqueados.
+- **Logs**: todos imprimen a stdout (`[rolex]…` / `[agenda] vista -> …` / `[clima]…` / `[sysmon]…`).
+- **Clima offline**: ver cache `.clima_cache.json` y probar URL Open-Meteo manual.
+- **Sysmon sin datos**: instalar `psutil`; para GPU instalar driver NVIDIA + `nvidia-smi`.

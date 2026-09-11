@@ -2,9 +2,9 @@
 Type=Application
 Name=Clima Dorado Widget
 Comment=Clima de Puebla estilo lujo para Wayland/GNOME (Open-Meteo)
-Exec=/home/chavezh/Vibes/Linux_Widgets/run_clima.sh
-Path=/home/chavezh/Vibes/Linux_Widgets
-Icon=/home/chavezh/Vibes/Linux_Widgets/clima-icon.png
+Exec=/home/chavezh/Vibes/Widgets/Linux_Widgets/run_clima.sh
+Path=/home/chavezh/Vibes/Widgets/Linux_Widgets
+Icon=/home/chavezh/Vibes/Widgets/Linux_Widgets/clima-icon.png
 Terminal=false
 Categories=Utility;
 StartupNotify=false

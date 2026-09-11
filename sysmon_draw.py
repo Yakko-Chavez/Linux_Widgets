@@ -39,11 +39,6 @@ def _text_centered(cr, cx, y, text, size, color, serif=True, bold=True):
     cr.restore()
 
 
-def _gold_stroke(cr):
-    g = cr  # placeholder para mantener firma simple
-    return GOLD
-
-
 def _draw_dial(cr, cx, cy, r, label, pct, main, sub):
     import cairo
     pct = max(0.0, min(100.0, float(pct or 0)))
@@ -137,26 +132,28 @@ def _draw_mini(cr, x, y, w, label, pct, text):
     import cairo
     pct = max(0.0, min(100.0, float(pct or 0)))
     cr.save()
-    _text_centered(cr, x + 24, y + 11, label, 11, GOLD_LIGHT, serif=False)
-    bx, bw, bh = x + 52, w - 52, 10
+    label_size = max(6, min(11, w * 0.04))
+    bar_h = max(6, min(10, w * 0.03))
+    _text_centered(cr, x + 24, y + 11, label, label_size, GOLD_LIGHT, serif=False)
+    bx, bw = x + 52, w - 52
     by = y + 3
-    _rr(cr, bx, by, bw, bh, 5)
+    _rr(cr, bx, by, bw, bar_h, 4)
     cr.set_source_rgb(0.08, 0.08, 0.09)
     cr.fill()
     if pct > 0.5:
-        _rr(cr, bx + 1, by + 1, (bw - 2) * pct / 100.0, bh - 2, 4)
+        _rr(cr, bx + 1, by + 1, (bw - 2) * pct / 100.0, bar_h - 2, 3)
         g = cairo.LinearGradient(bx, 0, bx + bw, 0)
         g.add_color_stop_rgb(0, *GOLD_DARK)
         g.add_color_stop_rgb(1, *GOLD_LIGHT)
         cr.set_source(g)
         cr.fill()
-    _rr(cr, bx, by, bw, bh, 5)
+    _rr(cr, bx, by, bw, bar_h, 4)
     cr.set_source_rgb(*GOLD_DARK)
     cr.set_line_width(1)
     cr.stroke()
     cr.set_source_rgb(*MUTED)
     cr.select_font_face("Sans", 0, 0)
-    cr.set_font_size(10.5)
+    cr.set_font_size(max(6, min(10.5, w * 0.035)))
     cr.move_to(bx, y + 25)
     cr.show_text(text)
     cr.restore()
@@ -164,19 +161,19 @@ def _draw_mini(cr, x, y, w, label, pct, text):
 
 def sysmon_layout(w, h):
     """Geometria de diales para el widget (coords logicas)."""
-    header_h = 58
-    footer_h = 58
+    header_h = max(30, h * 0.18)
+    footer_h = max(30, h * 0.18)
     area_h = h - header_h - footer_h
     # 6 diales en horizontal, compactos (textos debajo del dial)
     cy = header_h + area_h * 0.36
     xs = [w * (0.085 + 0.166 * i) for i in range(6)]
     r = min(w * 0.068, area_h * 0.27)
     return {
-        "title_y": 32,
+        "title_y": max(18, h * 0.10),
         "dials_xy": [(x, cy) for x in xs],
         "dial_r": r,
         "mini_y": h - footer_h + 8,
-        "footer_y": h - 12,
+        "footer_y": h - max(8, h * 0.04),
     }
 
 
@@ -215,11 +212,12 @@ def draw_sysmon(cr, w, h, data, locked=False):
     cr.restore()
 
     lay = sysmon_layout(w, h)
-    _text_centered(cr, w / 2, lay["title_y"], title, 21, GOLD_LIGHT)
+    title_size = max(8, min(21, h * 0.07))
+    _text_centered(cr, w / 2, lay["title_y"], title, title_size, GOLD_LIGHT)
     # linea bajo titulo
     cr.save()
-    cr.move_to(28, lay["title_y"] + 12)
-    cr.line_to(w - 28, lay["title_y"] + 12)
+    cr.move_to(max(16, w * 0.08), lay["title_y"] + max(6, h * 0.04))
+    cr.line_to(w - max(16, w * 0.08), lay["title_y"] + max(6, h * 0.04))
     cr.set_source_rgb(*GOLD_DARK)
     cr.set_line_width(1)
     cr.stroke()
@@ -241,14 +239,22 @@ def draw_sysmon(cr, w, h, data, locked=False):
                    m.get("label", ""), m.get("pct", 0), m.get("text", ""))
 
     if foot:
-        _text_centered(cr, w / 2, lay["footer_y"], foot, 10.5, MUTED,
+        footer_size = max(6, min(10.5, h * 0.035))
+        _text_centered(cr, w / 2, lay["footer_y"], foot, footer_size, MUTED,
                        serif=False, bold=False)
     if locked:
         # candadito dorado abajo-derecha (igual que la agenda)
         cr.save()
-        cr.select_font_face("Sans", 0, 1)
-        cr.set_font_size(14)
-        cr.set_source_rgb(*GOLD_LIGHT)
-        cr.move_to(w - 30, h - 14)
-        cr.show_text("🔒")
+        lx, ly = w - 30, h - 30
+        cr.set_source_rgb(*GOLD)
+        cr.set_line_width(2.0)
+        cr.set_line_cap(1)
+        cr.new_sub_path()
+        cr.arc(lx, ly - 2, 6, math.pi, 2 * math.pi)
+        cr.stroke()
+        _rr(cr, lx - 9, ly - 2, 18, 13, 3)
+        cr.stroke()
+        cr.new_sub_path()
+        cr.arc(lx, ly + 2.5, 1.8, 0, 2 * math.pi)
+        cr.fill()
         cr.restore()

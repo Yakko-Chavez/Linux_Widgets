@@ -184,20 +184,29 @@ def draw_clima(cr, w, h, data, locked=False):
     cr.restore()
 
     # header ciudad
-    _text_centered(cr, w / 2, 40, city, 22, GOLD_LIGHT)
+    header_y = max(24, h * 0.075)
+    header_size = max(8, min(22, h * 0.045))
+    _text_centered(cr, w / 2, header_y, city, header_size, GOLD_LIGHT)
+    line_y = header_y + max(8, h * 0.03)
     cr.save()
-    cr.move_to(28, 52)
-    cr.line_to(w - 28, 52)
+    cr.move_to(max(16, w * 0.08), line_y)
+    cr.line_to(w - max(16, w * 0.08), line_y)
     cr.set_source_rgb(*GOLD_DARK)
     cr.set_line_width(1)
     cr.stroke()
     cr.restore()
 
     # icono + temp actual
-    _draw_icon(cr, w / 2, 118, 44, code)
+    icon_y = line_y + max(40, h * 0.12)
+    icon_r = max(14, min(44, h * 0.09))
+    _draw_icon(cr, w / 2, icon_y, icon_r, code)
+    temp_y = icon_y + max(50, h * 0.15)
+    temp_size = max(20, min(64, h * 0.13))
     ttxt = f"{temp:.0f}°" if isinstance(temp, (int, float)) else "--°"
-    _text_centered(cr, w / 2, 200, ttxt, 64, GOLD_LIGHT, serif=False)
-    _text_centered(cr, w / 2, 224, wmo_label(code), 15, CREAM, serif=False)
+    _text_centered(cr, w / 2, temp_y, ttxt, temp_size, GOLD_LIGHT, serif=False)
+    desc_y = temp_y + max(15, h * 0.05)
+    desc_size = max(7, min(15, h * 0.03))
+    _text_centered(cr, w / 2, desc_y, wmo_label(code), desc_size, CREAM, serif=False)
 
     # detalles
     det = []
@@ -208,13 +217,16 @@ def draw_clima(cr, w, h, data, locked=False):
     if isinstance(wind, (int, float)):
         det.append(f"Vie {wind:.0f} km/h")
     if det:
-        _text_centered(cr, w / 2, 248, " · ".join(det), 12.5, MUTED,
+        det_y = desc_y + max(12, h * 0.04)
+        det_size = max(6, min(12.5, h * 0.025))
+        _text_centered(cr, w / 2, det_y, " · ".join(det), det_size, MUTED,
                        serif=False, bold=False)
 
     # separador
+    sep_y = det_y + max(10, h * 0.03) if det else desc_y + max(10, h * 0.03)
     cr.save()
-    cr.move_to(28, 262)
-    cr.line_to(w - 28, 262)
+    cr.move_to(max(16, w * 0.08), sep_y)
+    cr.line_to(w - max(16, w * 0.08), sep_y)
     cr.set_source_rgb(*GOLD_DARK)
     cr.set_line_width(1)
     cr.stroke()
@@ -223,19 +235,22 @@ def draw_clima(cr, w, h, data, locked=False):
     # tira 5 dias (anclada abajo para no dejar hueco)
     n = max(1, len(days))
     col_w = (w - 48) / 5
-    base_y = h - 198
+    base_y = h - max(100, h * 0.35)
+    dow_size = max(6, min(12, h * 0.025))
+    day_icon_r = max(8, min(20, h * 0.04))
+    temp_text_size = max(6, min(12.5, h * 0.025))
     for i, d in enumerate(days):
         cx = 24 + col_w * (i + 0.5)
-        _text_centered(cr, cx, base_y, str(d.get("dow", "")), 12,
+        _text_centered(cr, cx, base_y, str(d.get("dow", "")), dow_size,
                        GOLD_LIGHT, serif=False)
-        _draw_icon(cr, cx, base_y + 30, 20, d.get("code", 3))
+        _draw_icon(cr, cx, base_y + max(15, h * 0.05), day_icon_r, d.get("code", 3))
         mx, mn = d.get("max"), d.get("min")
         mtxt = f"{mx:.0f}°/{mn:.0f}°" if isinstance(mx, (int, float)) and isinstance(mn, (int, float)) else "--"
-        _text_centered(cr, cx, base_y + 66, mtxt, 12.5, CREAM, serif=False)
+        _text_centered(cr, cx, base_y + max(35, h * 0.1), mtxt, temp_text_size, CREAM, serif=False)
         if i < n - 1:
             cr.save()
             cr.move_to(24 + col_w * (i + 1), base_y - 6)
-            cr.line_to(24 + col_w * (i + 1), base_y + 60)
+            cr.line_to(24 + col_w * (i + 1), base_y + max(35, h * 0.1))
             cr.set_source_rgba(0.48, 0.37, 0.10, 0.5)
             cr.set_line_width(1)
             cr.stroke()
@@ -245,13 +260,22 @@ def draw_clima(cr, w, h, data, locked=False):
     if offline:
         foot = (foot + " · sin conexión").strip(" ·")
     if foot:
-        _text_centered(cr, w / 2, h - 16, foot, 10.5, MUTED,
+        footer_size = max(6, min(10.5, h * 0.025))
+        _text_centered(cr, w / 2, h - max(10, h * 0.03), foot, footer_size, MUTED,
                        serif=False, bold=False)
     if locked:
+        # candadito dorado vectorial abajo-derecha (igual que la agenda)
         cr.save()
-        cr.select_font_face("Sans", 0, 1)
-        cr.set_font_size(14)
-        cr.set_source_rgb(*GOLD_LIGHT)
-        cr.move_to(w - 30, h - 14)
-        cr.show_text("🔒")
+        lx, ly = w - 30, h - 30
+        cr.set_source_rgb(*GOLD)
+        cr.set_line_width(2.0)
+        cr.set_line_cap(1)
+        cr.new_sub_path()
+        cr.arc(lx, ly - 2, 6, math.pi, 2 * math.pi)
+        cr.stroke()
+        _rr(cr, lx - 9, ly - 2, 18, 13, 3)
+        cr.stroke()
+        cr.new_sub_path()
+        cr.arc(lx, ly + 2.5, 1.8, 0, 2 * math.pi)
+        cr.fill()
         cr.restore()

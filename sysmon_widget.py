@@ -39,13 +39,15 @@ if "--debug" in sys.argv:
     sys.argv = [a for a in sys.argv if a != "--debug"]
 
 ASPECT = 2.7  # apaisado: 6 diales en horizontal
-MIN_H, MAX_H = 260, 500
+MIN_H, MAX_H = 100, 500
 DEFAULT_H = 320
 
 DEFAULT_CONFIG = {
     "height": DEFAULT_H,
     "locked": False,
     "opacity": 1.0,
+    "x": -1,
+    "y": -1,
 }
 
 _gpu_cache = {"t": 0.0, "data": None}
@@ -311,6 +313,12 @@ class SysmonWidget(Gtk.Application):
         w, h = self.widget_size()
         self.win.set_default_size(w, h)
 
+        # Restaurar posicion guardada
+        x = self.cfg.get("x", -1)
+        y = self.cfg.get("y", -1)
+        if x >= 0 and y >= 0:
+            self.win.move(x, y)
+
         css = Gtk.CssProvider()
         css.load_from_data((CSS_DEBUG if DEBUG else CSS).encode())
         Gtk.StyleContext.add_provider_for_display(
@@ -331,6 +339,7 @@ class SysmonWidget(Gtk.Application):
         drag = Gtk.GestureDrag.new()
         drag.set_button(1)
         drag.connect("drag-begin", self.on_drag_begin)
+        drag.connect("drag-end", self.on_drag_end)
         self.image.add_controller(drag)
 
         right = Gtk.GestureClick.new()
@@ -377,6 +386,19 @@ class SysmonWidget(Gtk.Application):
         return True
 
     # ---- interaccion ----
+    def _save_position(self):
+        """Guarda la posicion actual de la ventana en config."""
+        try:
+            toplevel = self.win.get_surface()
+            if toplevel and hasattr(toplevel, 'get_position_x'):
+                x = toplevel.get_position_x()
+                y = toplevel.get_position_y()
+                self.cfg["x"] = x
+                self.cfg["y"] = y
+                save_config(self.cfg)
+        except Exception as e:
+            print(f"[sysmon] Error guardando posicion: {e}", file=sys.stderr)
+
     def on_drag_begin(self, gesture, x, y):
         if self.cfg.get("locked"):
             gesture.set_state(Gtk.EventSequenceState.DENIED)
@@ -389,6 +411,10 @@ class SysmonWidget(Gtk.Application):
             surf.begin_move(device, button, x, y, ts)
         except Exception as e:
             print(f"Move: usa Super+arrastrar en GNOME ({e})", file=sys.stderr)
+
+    def on_drag_end(self, gesture, _offset_x, _offset_y):
+        """Guardar posicion despues de arrastrar."""
+        self._save_position()
 
     def on_left_click(self, gesture, n_press, x, y):
         if n_press == 2:
@@ -453,10 +479,10 @@ class SysmonWidget(Gtk.Application):
     def resize_by(self, delta):
         h = max(MIN_H, min(MAX_H, int(self.cfg.get("height", DEFAULT_H)) + delta))
         self.cfg["height"] = h
-        save_config(self.cfg)
         w = int(h * ASPECT)
         self.win.set_default_size(w, h)
         self.refresh(force=True)
+        self._save_position()
 
 
 def main():

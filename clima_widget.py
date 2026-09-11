@@ -35,7 +35,7 @@ if "--debug" in sys.argv:
     sys.argv = [a for a in sys.argv if a != "--debug"]
 
 ASPECT = 0.62  # vertical tipo agenda
-MIN_H, MAX_H = 420, 750
+MIN_H, MAX_H = 100, 750
 DEFAULT_H = 540
 FETCH_EVERY = 20 * 60
 
@@ -46,6 +46,8 @@ DEFAULT_CONFIG = {
     "height": DEFAULT_H,
     "locked": False,
     "opacity": 1.0,
+    "x": -1,
+    "y": -1,
 }
 
 DOW_ES = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"]
@@ -179,7 +181,10 @@ def current_data(cfg):
     cached = _load_cache()
     if cached:
         try:
-            return parse_payload(cached, cfg.get("city", "Puebla"))
+            d = parse_payload(cached, cfg.get("city", "Puebla"))
+            # Sin fetch fresco en esta sesion: marcar como offline/cache
+            d["offline"] = True
+            return d
         except Exception:
             pass
     return {"city": cfg.get("city", "Puebla"), "temp": None, "code": 3,
@@ -241,6 +246,12 @@ class ClimaWidget(Gtk.Application):
         w, h = self.widget_size()
         self.win.set_default_size(w, h)
 
+        # Restaurar posicion guardada
+        x = self.cfg.get("x", -1)
+        y = self.cfg.get("y", -1)
+        if x >= 0 and y >= 0:
+            self.win.move(x, y)
+
         css = Gtk.CssProvider()
         css.load_from_data((CSS_DEBUG if DEBUG else CSS).encode())
         Gtk.StyleContext.add_provider_for_display(
@@ -261,6 +272,7 @@ class ClimaWidget(Gtk.Application):
         drag = Gtk.GestureDrag.new()
         drag.set_button(1)
         drag.connect("drag-begin", self.on_drag_begin)
+        drag.connect("drag-end", self.on_drag_end)
         self.image.add_controller(drag)
 
         right = Gtk.GestureClick.new()
@@ -312,6 +324,19 @@ class ClimaWidget(Gtk.Application):
         refresh_data_async(self.cfg, self.refresh)
         return True
 
+    def _save_position(self):
+        """Guarda la posicion actual de la ventana en config."""
+        try:
+            toplevel = self.win.get_surface()
+            if toplevel and hasattr(toplevel, 'get_position_x'):
+                x = toplevel.get_position_x()
+                y = toplevel.get_position_y()
+                self.cfg["x"] = x
+                self.cfg["y"] = y
+                save_config(self.cfg)
+        except Exception as e:
+            print(f"[clima] Error guardando posicion: {e}", file=sys.stderr)
+
     def on_drag_begin(self, gesture, x, y):
         if self.cfg.get("locked"):
             gesture.set_state(Gtk.EventSequenceState.DENIED)
@@ -324,6 +349,10 @@ class ClimaWidget(Gtk.Application):
             surf.begin_move(device, button, x, y, ts)
         except Exception as e:
             print(f"Move: usa Super+arrastrar en GNOME ({e})", file=sys.stderr)
+
+    def on_drag_end(self, gesture, _offset_x, _offset_y):
+        """Guardar posicion despues de arrastrar."""
+        self._save_position()
 
     def on_left_click(self, gesture, n_press, x, y):
         if n_press == 2:
@@ -394,10 +423,10 @@ class ClimaWidget(Gtk.Application):
     def resize_by(self, delta):
         h = max(MIN_H, min(MAX_H, int(self.cfg.get("height", DEFAULT_H)) + delta))
         self.cfg["height"] = h
-        save_config(self.cfg)
         w = int(h * ASPECT)
         self.win.set_default_size(w, h)
         self.refresh()
+        self._save_position()
 
 
 def main():

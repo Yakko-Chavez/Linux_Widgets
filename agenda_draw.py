@@ -55,13 +55,14 @@ def header_arrow_zones(w, h):
     """
     pad = 6
     x0, y0, ww = pad, pad, w - pad * 2
-    hy = y0 + 52
+    hy = y0 + max(30, h * 0.09)
     cy = hy - 8
-    r = 15
+    r = max(8, min(15, ww * 0.045))
+    offset = max(20, ww * 0.08)
     return {
-        "prev": (x0 + 36, cy, r),
-        "next": (x0 + ww - 36, cy, r),
-        "today": (x0 + 18, y0 + (h - pad * 2) - 58, ww - 36, 44),
+        "prev": (x0 + offset, cy, r),
+        "next": (x0 + ww - offset, cy, r),
+        "today": (x0 + 18, y0 + (h - pad * 2) - max(30, h * 0.09), ww - 36, max(20, h * 0.07)),
     }
 
 
@@ -168,10 +169,11 @@ def draw_agenda(cr, w, h, year, month, today_ymd, monday_first=True, locked=Fals
     inner_w = ww - 36
 
     # --- Header MES AÑO ---
-    hy = y0 + 52
+    hy = y0 + max(30, hh * 0.09)
+    header_size = max(8, min(ww * 0.060, 24))
     _text_centered(
         cr, x0 + ww / 2, hy, f"{MESES[month]} {year}",
-        min(ww * 0.060, 24), GOLD_LIGHT,
+        header_size, GOLD_LIGHT,
     )
     # botones dorados mes anterior / siguiente
     zones = header_arrow_zones(w, h)
@@ -199,13 +201,13 @@ def draw_agenda(cr, w, h, year, month, today_ymd, monday_first=True, locked=Fals
 
     # --- Nombres dias semana ---
     week = ["L", "M", "M", "J", "V", "S", "D"] if monday_first else ["D", "L", "M", "M", "J", "V", "S"]
-    grid_top = ly + 30
+    grid_top = ly + max(18, hh * 0.05)
     grid_x = inner_x
     grid_w = inner_w
     cell_w = grid_w / 7.0
     cr.save()
     cr.select_font_face("Serif", 0, 1)
-    cr.set_font_size(min(cell_w * 0.32, 15))
+    cr.set_font_size(max(6, min(cell_w * 0.32, 15)))
     cr.set_source_rgb(*MUTED)
     for i, name in enumerate(week):
         ext = cr.text_extents(name)
@@ -252,6 +254,7 @@ def draw_agenda(cr, w, h, year, month, today_ymd, monday_first=True, locked=Fals
             # domingo: columna 6 (lunes primero) o 0 (domingo primero)
             is_sunday = (monday_first and c == 6) or (not monday_first and c == 0)
 
+            day_font_size = max(5, min(cell_w, cell_h) * 0.38)
             if is_today:
                 _rr(cr, cell_cx - cell_w * 0.42, cell_cy - cell_h * 0.40,
                     cell_w * 0.84, cell_h * 0.80, 8)
@@ -261,7 +264,7 @@ def draw_agenda(cr, w, h, year, month, today_ymd, monday_first=True, locked=Fals
                 cr.set_source(tg)
                 cr.fill()
                 _text_centered(cr, cell_cx, cell_cy + cell_h * 0.13, str(day_num),
-                               min(cell_w, cell_h) * 0.38, (0.08, 0.06, 0.02))
+                               day_font_size, (0.08, 0.06, 0.02))
             else:
                 if not in_month:
                     color = (0.32, 0.30, 0.27)
@@ -270,25 +273,23 @@ def draw_agenda(cr, w, h, year, month, today_ymd, monday_first=True, locked=Fals
                 else:
                     color = CREAM
                 _text_centered(cr, cell_cx, cell_cy + cell_h * 0.13, str(day_num),
-                               min(cell_w, cell_h) * 0.36, color, bold=in_month)
+                               max(5, min(cell_w, cell_h) * 0.36), color, bold=in_month)
     cr.restore()
 
     # --- Footer: fecha de hoy ---
     cr.save()
-    fy = y0 + hh - 40
+    fy = y0 + hh - max(24, hh * 0.07)
     cr.set_source_rgb(*GOLD_DARK)
     cr.set_line_width(1.0)
-    cr.move_to(inner_x, fy - 18)
-    cr.line_to(x0 + ww - 18, fy - 18)
+    cr.move_to(inner_x, fy - max(10, hh * 0.03))
+    cr.line_to(x0 + ww - 18, fy - max(10, hh * 0.03))
     cr.stroke()
     wd = calendar.weekday(ty, tm, td)
-    if monday_first:
-        wd_name = DIAS_LARGOS[wd]
-    else:
-        wd_name = DIAS_LARGOS[(wd - 1) % 7] if False else DIAS_LARGOS[wd]
+    wd_name = DIAS_LARGOS[wd]
+    footer_size = max(6, min(ww * 0.042, 15))
     _text_centered(cr, x0 + ww / 2, fy,
                    f"Hoy · {wd_name} {td} de {MESES[tm].lower()}",
-                   min(ww * 0.042, 15), GOLD_LIGHT, bold=False)
+                   footer_size, GOLD_LIGHT, bold=False)
     # rombo dibujado con paths (el glifo ◇ no existe en todas las Serif)
     cr.save()
     dx, dy, ds = x0 + ww / 2, fy + 14, 5

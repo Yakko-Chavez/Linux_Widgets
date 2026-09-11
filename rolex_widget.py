@@ -37,6 +37,8 @@ DEFAULT_CONFIG = {
     "sweep": True,
     "locked": False,
     "opacity": 1.0,
+    "x": -1,
+    "y": -1,
 }
 
 
@@ -47,11 +49,11 @@ def load_config():
             cfg.update(json.load(f))
     except (FileNotFoundError, json.JSONDecodeError):
         pass
-    # Sanitizar: size dentro de 200-600, eliminar clave legacy always_on_top
+    # Sanitizar: size dentro de 100-600, eliminar clave legacy always_on_top
     # (Wayland/GNOME no permite keep-above desde la app).
     cfg.pop("always_on_top", None)
     try:
-        cfg["size"] = max(200, min(600, int(cfg.get("size", 340))))
+        cfg["size"] = max(100, min(600, int(cfg.get("size", 340))))
     except (TypeError, ValueError):
         cfg["size"] = 340
     return cfg
@@ -129,6 +131,12 @@ class RolexWidget(Gtk.Application):
         size = int(self.cfg.get("size", 340))
         self.win.set_default_size(size, size)
 
+        # Restaurar posicion guardada
+        x = self.cfg.get("x", -1)
+        y = self.cfg.get("y", -1)
+        if x >= 0 and y >= 0:
+            self.win.move(x, y)
+
         css = Gtk.CssProvider()
         css.load_from_data((CSS_DEBUG if DEBUG else CSS).encode())
         Gtk.StyleContext.add_provider_for_display(
@@ -150,6 +158,7 @@ class RolexWidget(Gtk.Application):
         drag = Gtk.GestureDrag.new()
         drag.set_button(1)
         drag.connect("drag-begin", self.on_drag_begin)
+        drag.connect("drag-end", self.on_drag_end)
         self.image.add_controller(drag)
 
         # Click derecho -> menu (firma GTK4: pressed(n_press, x, y))
@@ -213,6 +222,20 @@ class RolexWidget(Gtk.Application):
         return False
 
     # ---- interaccion ----
+    def _save_position(self):
+        """Guarda la posicion actual de la ventana en config."""
+        try:
+            # Obtener posicion via Gdk.Toplevel (GTK4)
+            toplevel = self.win.get_surface()
+            if toplevel and hasattr(toplevel, 'get_position_x'):
+                x = toplevel.get_position_x()
+                y = toplevel.get_position_y()
+                self.cfg["x"] = x
+                self.cfg["y"] = y
+                save_config(self.cfg)
+        except Exception as e:
+            print(f"[rolex] Error guardando posicion: {e}", file=sys.stderr)
+
     def on_drag_begin(self, gesture, x, y):
         if self.cfg.get("locked"):
             gesture.set_state(Gtk.EventSequenceState.DENIED)
@@ -226,6 +249,10 @@ class RolexWidget(Gtk.Application):
             surf.begin_move(device, button, x, y, ts)
         except Exception as e:
             print(f"Move: usa Super+arrastrar en GNOME ({e})", file=sys.stderr)
+
+    def on_drag_end(self, gesture, _offset_x, _offset_y):
+        """Guardar posicion despues de arrastrar."""
+        self._save_position()
 
     def on_left_click(self, gesture, n_press, x, y):
         if n_press == 2:
@@ -291,11 +318,11 @@ class RolexWidget(Gtk.Application):
         self.quit()
 
     def resize_by(self, delta):
-        size = max(200, min(600, int(self.cfg.get("size", 340)) + delta))
+        size = max(100, min(600, int(self.cfg.get("size", 340)) + delta))
         self.cfg["size"] = size
-        save_config(self.cfg)
         self.win.set_default_size(size, size)
         self.refresh()
+        self._save_position()
 
 
 def main():
