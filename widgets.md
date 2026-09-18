@@ -12,7 +12,10 @@ en vectorial con Cairo. Sin imágenes externas.
 
 - Render en memoria: `pycairo` (ARGB32) → `Gtk.Picture` vía `Gdk.MemoryTexture`
   (`B8G8R8A8_PREMULTIPLIED`). Sin archivos temporales, sin `python3-gi-cairo`.
-- Nitidez HiDPI con escala ×2.
+- Buffer = tamaño lógico × escala real del monitor (`widget_scale()`): la
+  ventana mide lo configurado en x1 y se ve nítida en HiDPI.
+- Infraestructura común en `widget_base.py` (config, render, ventana, gestos,
+  menú, bloqueo, teclas).
 - Movimiento por protocolo Wayland (`surface.begin_move()`); en GNOME también
   vale `Super + arrastrar`.
 - Doble-click / tecla `L`: bloquear (sin arrastre, sin menú, sin botones).
@@ -74,7 +77,7 @@ python3 rolex_widget.py
 ### Archivos
 
 - `rolex_widget.py` — ventana, timer 50/1000 ms, menú, drag.
-  Función clave: `render_texture(size)`; clase `RolexWidget(Gtk.Application)`.
+  Función clave: `render_texture(size, scale)`; clase `RolexWidget(Gtk.Application)`.
 - `rolex_draw.py` — `draw_rolex(cr, w, h, hour, minute, second_float, day)`.
 - `config.json`, `rolex.sh`, `rolex-widget.desktop`, `requirements.txt`.
 

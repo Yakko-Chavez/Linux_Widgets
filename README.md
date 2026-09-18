@@ -12,11 +12,14 @@ con Cairo. Sin imágenes externas.
 
 - Render en memoria: `pycairo` (ARGB32) → `Gtk.Picture` vía `Gdk.MemoryTexture`
   (`B8G8R8A8_PREMULTIPLIED`). Sin archivos temporales, sin `python3-gi-cairo`.
-- Nitidez HiDPI con escala ×2.
+- Buffer = tamaño lógico × escala real del monitor (`widget_scale()`): la
+  ventana mide lo configurado en x1 y se ve nítida en HiDPI.
+- Infraestructura común en `widget_base.py` (config, render, ventana, gestos,
+  menú, bloqueo, teclas).
 - Movimiento por protocolo Wayland (`surface.begin_move()`); en GNOME también
   vale `Super + arrastrar`.
 - Doble-click / tecla `L`: bloquear (sin arrastre, sin menú; aparece candadito
-  dorado vectorial abajo-derecha en Agenda/Clima/Sysmon).
+  dorado vectorial abajo-derecha en Agenda/Clima/Sysmon/Chrono).
 - Click derecho: menú contextual. `+ / −`: tamaño. `Q / Esc`: salir.
 - Config en JSON con sanitizado de rangos al cargar. La posición en pantalla
   la recuerda la extensión `rolex-below@local` (ver abajo), no la app.
@@ -222,8 +225,8 @@ python3 chrono_widget.py
 { "size": 340, "locked": false, "opacity": 1.0 }
 ```
 
-- Timer interno a 50 ms (`time.monotonic()`); las décimas del digital son
-  `int((e % 1) * 10)`.
+- Timer interno a 50 ms (`time.monotonic()`); el digital redondea a décimas
+  desde el total (`format_elapsed()`), sin estado persistente.
 
 ### Archivos
 
