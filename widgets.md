@@ -1,8 +1,8 @@
 # Widgets de escritorio — Wayland + GNOME
 
-Reloj Rolex Submariner, Agenda de Lujo, Clima Dorado y Monitor Dorado:
-ventanas GTK4 flotantes, sin bordes, dibujadas 100% en vectorial con Cairo.
-Sin imágenes externas.
+Reloj Rolex Submariner, Agenda de Lujo, Clima Dorado, Monitor Dorado y
+Cronógrafo Mecánico: ventanas GTK4 flotantes, sin bordes, dibujadas 100%
+en vectorial con Cairo. Sin imágenes externas.
 
 > Nota Wayland/GNOME: `gtk-layer-shell` **no funciona en GNOME**. Son ventanas
 > GTK4 sin decoración, transparentes, que no roban foco. No quedan como fondo
@@ -16,17 +16,16 @@ Sin imágenes externas.
 - Movimiento por protocolo Wayland (`surface.begin_move()`); en GNOME también
   vale `Super + arrastrar`.
 - Doble-click / tecla `L`: bloquear (sin arrastre, sin menú, sin botones).
-  Agenda/Clima/Sysmon dibujan candadito dorado vectorial abajo-derecha.
+  Agenda/Clima/Sysmon/Chrono dibujan candadito dorado vectorial abajo-derecha.
 - Click derecho: menú contextual. `+ / −`: tamaño. `Q / Esc`: salir.
-- Config en JSON con sanitizado de rangos al cargar + posición `x,y`.
-- Modo `--debug` (o var. `ROLEX_DEBUG=1` / `AGENDA_DEBUG=1` / `CLIMA_DEBUG=1` /
-  `SYSMON_DEBUG=1`): ventana decorada y con borde para permitir varias instancias.
+- Config en JSON con sanitizado de rangos al cargar. La posición en pantalla
+  la recuerda la extensión `rolex-below@local`, no la app.
 - Autostart copiando el `.desktop` a `~/.config/autostart/`.
-- Compatibles con la extensión `rolex-below@local`
-  (`~/.local/share/gnome-shell/extensions/`), que los mantiene al fondo de la
-  pila y visibles en todos los escritorios (`lower()` + `stick()`). Requiere
-  cerrar sesión una vez tras instalarla y luego
-  `gnome-extensions enable rolex-below@local`.
+- La extensión `rolex-below@local` (fuente en `gnome-extension/`, instalar con
+  `./gnome-extension/install-extension.sh` + cerrar sesión + `gnome-extensions
+  enable rolex-below@local`) los mantiene al fondo de la pila, visibles en
+  todos los escritorios (`lower()` + `stick()`) y **restaura su última
+  posición** (`~/.config/desktop-widgets/positions.json`).
 
 ## Requisitos
 
@@ -245,10 +244,63 @@ python3 sysmon_widget.py
 
 ---
 
+## 5. Cronógrafo Mecánico (`chrono_widget.py`)
+
+Cronómetro estilo mecánico: aguja central de segundos (barrido 0–60),
+subesferas de 30 min / 12 h / décimas (1 vuelta = 1 s), ventana digital
+`HH:MM:SS.D` y pushers START/STOP (aro verde en pausa, rojo en marcha) y
+RESET (solo en pausa). Al cerrar se pierde la medición.
+
+### Uso
+
+```bash
+python3 chrono_widget.py
+# o
+./run_chrono.sh
+```
+
+### Controles
+
+| Acción | Efecto |
+|---|---|
+| Pushers dorados | START/STOP y RESET (botones GTK reales sobre el dibujo) |
+| Arrastrar (botón izq.) | Mover (bloqueado = no mueve) |
+| Click derecho | Menú: iniciar/pausar, reset, bloquear, tamaño, salir |
+| Doble-click / `L` | Bloquear (candadito vectorial, pushers deshabilitados) |
+| `Espacio` | Start / stop |
+| `R` | Reset (solo en pausa) |
+| `+` / `−` | Tamaño 100–600 px |
+| `Q` / `Esc` | Salir |
+
+### Config (`chrono_config.json`)
+
+```json
+{ "size": 340, "locked": false, "opacity": 1.0 }
+```
+
+- Timer a 50 ms con `time.monotonic()`; sin estado persistente.
+
+### Detalles de implementación
+
+- `toggle()` / `reset()` / `elapsed_now()` puros (testeables sin GUI);
+  `refresh()` no hace nada si aún no hay ventana.
+- `Gtk.Overlay` + 2 `Gtk.Button` transparentes (clase `go`) posicionados por
+  `_layout_buttons()` con `chrono_button_zones()` de `chrono_draw.py`.
+- `draw_chrono(cr, w, h, elapsed_s, running, locked)`; geometría de pushers
+  compartida en `_geometry()` para que dibujo y botones coincidan.
+
+### Archivos
+
+- `chrono_widget.py` — estados, timer 50 ms, overlay, menú, drag.
+- `chrono_draw.py` — `draw_chrono()`, `chrono_button_zones()`, `format_elapsed()`.
+- `chrono_config.json`, `run_chrono.sh`, `chrono-widget.desktop`.
+
+---
+
 ## Autostart en GNOME
 
 ```bash
-cp rolex-widget.desktop agenda-widget.desktop clima-widget.desktop sysmon-widget.desktop ~/.config/autostart/
+cp rolex-widget.desktop agenda-widget.desktop clima-widget.desktop sysmon-widget.desktop chrono-widget.desktop ~/.config/autostart/
 ```
 
 (Revisar que `Exec=` apunte a la ruta real.)
@@ -256,9 +308,9 @@ cp rolex-widget.desktop agenda-widget.desktop clima-widget.desktop sysmon-widget
 ## Solución de problemas
 
 - **No veo la ventana**: buscar `Rolex Submariner` / `Agenda de Lujo` / `Clima Dorado` /
-  `Monitor Dorado` con `Alt+Tab` o en Activities/Overview; probar con `--debug`.
+  `Monitor Dorado` / `Cronógrafo Mecánico` con `Alt+Tab` o en Activities/Overview; probar con `--debug`.
 - **Parece "muerto" (no responde)**: está bloqueado — doble-click o tecla `L`.
-  Agenda/Clima/Sysmon muestran candadito dorado vectorial cuando están bloqueados.
-- **Logs**: todos imprimen a stdout (`[rolex]…` / `[agenda] vista -> …` / `[clima]…` / `[sysmon]…`).
+  Agenda/Clima/Sysmon/Chrono muestran candadito dorado vectorial cuando están bloqueados.
+- **Logs**: todos imprimen a stdout (`[rolex]…` / `[agenda] vista -> …` / `[clima]…` / `[sysmon]…` / `[chrono]…`).
 - **Clima offline**: ver cache `.clima_cache.json` y probar URL Open-Meteo manual.
 - **Sysmon sin datos**: instalar `psutil`; para GPU instalar driver NVIDIA + `nvidia-smi`.

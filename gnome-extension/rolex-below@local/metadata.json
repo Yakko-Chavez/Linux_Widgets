@@ -1,0 +1,7 @@
+{
+  "uuid": "rolex-below@local",
+  "name": "Widgets: fondo + memoria de posición",
+  "description": "Mantiene los widgets (Rolex, Agenda, Clima, Monitor, Cronografo) al fondo, visibles en todos los escritorios y restaura su última posición.",
+  "shell-version": ["50"],
+  "version": 1
+}

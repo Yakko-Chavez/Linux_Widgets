@@ -1,8 +1,10 @@
 {
-  "height": 400,
+  "height": 600,
   "locked": false,
   "opacity": 1.0,
   "monday_first": true,
   "view_year": null,
-  "view_month": null
+  "view_month": null,
+  "x": -1,
+  "y": -1
 }

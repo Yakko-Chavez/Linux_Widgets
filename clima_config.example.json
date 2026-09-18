@@ -2,7 +2,9 @@
   "city": "Puebla",
   "lat": 19.04778,
   "lon": -98.20723,
-  "height": 500,
+  "height": 540,
   "locked": false,
-  "opacity": 1.0
+  "opacity": 1.0,
+  "x": -1,
+  "y": -1
 }

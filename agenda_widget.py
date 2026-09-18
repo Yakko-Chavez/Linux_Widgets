@@ -8,20 +8,17 @@ Misma filosofia que el Rolex Submariner:
 - Calendario mensual navegable, solo fecha del sistema (sin eventos externos).
 """
 
-import calendar
-import json
 import os
 import sys
 import time
-
-import cairo
 
 import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
-from gi.repository import Gdk, Gio, GLib, Gtk
+from gi.repository import Gdk, GLib, Gtk
 
+import widget_base as WB
 from agenda_draw import draw_agenda, header_arrow_zones
 
 APP_ID = "com.vibes.agenda-widget"
@@ -48,25 +45,15 @@ DEFAULT_CONFIG = {
 
 
 def load_config():
-    cfg = dict(DEFAULT_CONFIG)
-    try:
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-            cfg.update(json.load(f))
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
-    try:
-        cfg["height"] = max(MIN_H, min(MAX_H, int(cfg.get("height", DEFAULT_H))))
-    except (TypeError, ValueError):
-        cfg["height"] = DEFAULT_H
-    return cfg
+    return WB.load_config(
+        CONFIG_PATH, DEFAULT_CONFIG,
+        int_ranges={"height": (MIN_H, MAX_H, DEFAULT_H)},
+        float_ranges={"opacity": (0.1, 1.0, 1.0)},
+    )
 
 
 def save_config(cfg):
-    try:
-        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2)
-    except OSError as e:
-        print(f"No se pudo guardar config: {e}", file=sys.stderr)
+    WB.save_config(CONFIG_PATH, cfg)
 
 
 def current_view(cfg):
@@ -78,23 +65,16 @@ def current_view(cfg):
     return t.tm_year, t.tm_mon
 
 
-def render_texture(width, height, year, month, today_ymd, monday_first, locked=False):
-    scale = 2
-    px_w, px_h = int(width * scale), int(height * scale)
-    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, px_w, px_h)
-    cr = cairo.Context(surf)
-    cr.scale(scale, scale)
-    draw_agenda(cr, width, height, year, month, today_ymd, monday_first, locked)
-    surf.flush()
-    data = GLib.Bytes.new(bytes(surf.get_data()))
-    return Gdk.MemoryTexture.new(
-        px_w, px_h, Gdk.MemoryFormat.B8G8R8A8_PREMULTIPLIED, data, surf.get_stride()
-    )
+def render_texture(width, height, year, month, today_ymd, monday_first, locked=False, scale=WB.SCALE):
+    def paint(cr):
+        draw_agenda(cr, width, height, year, month, today_ymd, monday_first, locked)
+
+    return WB.render_texture(width, height, paint, scale=scale)
 
 
-CSS = """
-window.agenda { background-color: transparent; }
-window.agenda picture { background-color: transparent; }
+# Solo los botones de navegacion (el fondo transparente y el modo debug los
+# genera widget_base). En debug se usa el estilo dorado de la base.
+CSS_NAV = """
 window.agenda button.nav {
   background-color: transparent;
   background-image: none;
@@ -124,18 +104,12 @@ window.agenda button.nav:disabled {
 }
 """
 
-CSS_DEBUG = """
-window.agenda { background-color: rgba(40,40,40,1); border: 4px solid gold; }
-window.agenda picture { background-color: rgba(40,40,40,1); }
-"""
-
 
 class AgendaWidget(Gtk.Application):
     def __init__(self):
         super().__init__(
             application_id=None if DEBUG else APP_ID,
-            flags=Gio.ApplicationFlags.ALLOW_REPLACEMENT
-            | Gio.ApplicationFlags.REPLACE,
+            flags=WB.APP_FLAGS,
         )
         self.cfg = load_config()
         self.win = None
@@ -153,37 +127,15 @@ class AgendaWidget(Gtk.Application):
             self.win.present()
             return
 
-        self.win = Gtk.Window(application=self)
-        self.win.add_css_class("agenda")
-        self.win.set_title("Agenda de Lujo" + (" [DEBUG]" if DEBUG else ""))
-        self.win.set_decorated(True if DEBUG else False)
-        self.win.set_resizable(False)
-        self.win.set_focus_on_click(False)
-
         w, h = self.widget_size()
-        self.win.set_default_size(w, h)
-
-        # Restaurar posicion guardada
-        x = self.cfg.get("x", -1)
-        y = self.cfg.get("y", -1)
-        if x >= 0 and y >= 0:
-            self.win.move(x, y)
-
-        css = Gtk.CssProvider()
-        css.load_from_data((CSS_DEBUG if DEBUG else CSS).encode())
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        self.win = WB.make_window(
+            self, "agenda",
+            "Agenda de Lujo" + (" [DEBUG]" if DEBUG else ""),
+            w, h, self.cfg, DEBUG,
         )
-        try:
-            self.win.set_opacity(float(self.cfg.get("opacity", 1.0)))
-        except Exception:
-            pass
+        WB.install_css("agenda", DEBUG, extra=CSS_NAV)
 
-        self.image = Gtk.Picture()
-        self.image.set_content_fit(Gtk.ContentFit.FILL)
-        self.image.set_can_shrink(False)
-        self.image.set_size_request(w, h)
-        self.image.set_can_target(True)
+        self.image = WB.make_picture(w, h)
 
         # Overlay con botones reales: clicks 100% fiables (sin hit-testing
         # por coordenadas ni competencia con el gesto de arrastre). Son
@@ -212,25 +164,17 @@ class AgendaWidget(Gtk.Application):
         self.win.set_child(overlay)
         self._layout_nav()
 
-        drag = Gtk.GestureDrag.new()
-        drag.set_button(1)
-        drag.connect("drag-begin", self.on_drag_begin)
+        drag = WB.wire_drag(self.image, self.win, lambda: self.cfg.get("locked"))
         drag.connect("drag-end", self.on_drag_end)
-        self.image.add_controller(drag)
 
-        right = Gtk.GestureClick.new()
-        right.set_button(3)
-        right.connect("pressed", self.on_right_click)
-        self.image.add_controller(right)
+        WB.wire_click(self.image, 3, self.on_right_click)
 
-        dbl = Gtk.GestureClick.new()
-        dbl.set_button(1)
-        dbl.connect("pressed", self.on_left_click)
-        self.image.add_controller(dbl)
+        WB.wire_click(self.image, 1, self.on_left_click)
 
-        keys = Gtk.EventControllerKey.new()
-        keys.connect("key-pressed", self.on_key)
-        self.win.add_controller(keys)
+        WB.wire_keys(self.win, self.on_key)
+
+        # Si el monitor es HiDPI (o cambia), re-render con el buffer correcto.
+        self.win.connect("notify::scale-factor", lambda *_: self.refresh(force=True))
 
         self.win.present()
         print(f"[agenda] ventana presentada ({w}x{h}).", flush=True)
@@ -257,7 +201,7 @@ class AgendaWidget(Gtk.Application):
         try:
             tex = render_texture(
                 w, h, year, month, today, bool(self.cfg.get("monday_first", True)),
-                locked,
+                locked, scale=WB.widget_scale(self.win),
             )
             self.image.set_paintable(tex)
             self.image.set_size_request(w, h)
@@ -345,30 +289,8 @@ class AgendaWidget(Gtk.Application):
 
     # ---- interaccion ----
     def _save_position(self):
-        """Guarda la posicion actual de la ventana en config."""
-        try:
-            toplevel = self.win.get_surface()
-            if toplevel and hasattr(toplevel, 'get_position_x'):
-                x = toplevel.get_position_x()
-                y = toplevel.get_position_y()
-                self.cfg["x"] = x
-                self.cfg["y"] = y
-                save_config(self.cfg)
-        except Exception as e:
-            print(f"[agenda] Error guardando posicion: {e}", file=sys.stderr)
-
-    def on_drag_begin(self, gesture, x, y):
-        if self.cfg.get("locked"):
-            gesture.set_state(Gtk.EventSequenceState.DENIED)
-            return
-        try:
-            surf = self.win.get_surface()
-            device = gesture.get_current_event_device()
-            button = gesture.get_current_button()
-            ts = gesture.get_current_event_time()
-            surf.begin_move(device, button, x, y, ts)
-        except Exception as e:
-            print(f"Move: usa Super+arrastrar en GNOME ({e})", file=sys.stderr)
+        """Guarda la posicion actual de la ventana en config (best-effort)."""
+        WB.store_position(self.win, self.cfg, CONFIG_PATH)
 
     def on_drag_end(self, gesture, _offset_x, _offset_y):
         """Guardar posicion despues de arrastrar."""
@@ -376,43 +298,32 @@ class AgendaWidget(Gtk.Application):
 
     def on_left_click(self, gesture, n_press, x, y):
         if n_press == 2:
-            self.cfg["locked"] = not self.cfg.get("locked", False)
-            save_config(self.cfg)
+            WB.toggle_locked(self.cfg, CONFIG_PATH)
             self._layout_nav()
             self.refresh(force=True)
 
     def on_right_click(self, gesture, n_press, x, y):
         if n_press != 1 or self.cfg.get("locked"):
             return
-        menu = Gio.Menu()
-        menu.append("Mes anterior", "app.prev")
-        menu.append("Mes siguiente", "app.next")
-        menu.append("Ir a hoy", "app.today")
-        menu.append("Bloquear clicks ✓" if self.cfg.get("locked") else "Bloquear clicks", "app.lock")
-        menu.append("Tamaño +", "app.bigger")
-        menu.append("Tamaño −", "app.smaller")
-        menu.append("Salir", "app.quit")
-
-        for name in ("prev", "next", "today", "lock", "bigger", "smaller", "quit"):
-            if self.lookup_action(name) is None:
-                a = Gio.SimpleAction.new(name, None)
-                a.connect("activate", getattr(self, f"act_{name}"))
-                self.add_action(a)
-
-        pop = Gtk.PopoverMenu.new_from_model(menu)
-        pop.set_parent(self.image)
-        pop.set_pointing_to(Gdk.Rectangle(int(x), int(y), 1, 1))
-        pop.popup()
+        WB.popup_menu(self.image, x, y, self, [
+            ("Mes anterior", "prev", self.act_prev),
+            ("Mes siguiente", "next", self.act_next),
+            ("Ir a hoy", "today", self.act_today),
+            ("Bloquear clicks ✓" if self.cfg.get("locked") else "Bloquear clicks",
+             "lock", self.act_lock),
+            ("Tamaño +", "bigger", self.act_bigger),
+            ("Tamaño −", "smaller", self.act_smaller),
+            ("Salir", "quit", self.act_quit),
+        ])
 
     def on_key(self, _ctl, keyval, _keycode, _state):
         name = Gdk.keyval_name(keyval) or ""
         nl = name.lower()
-        if nl in ("q", "escape"):
+        if WB.is_quit_key(name, nl):
             self.quit()
             return True
-        if nl == "l":
-            self.cfg["locked"] = not self.cfg.get("locked", False)
-            save_config(self.cfg)
+        if WB.is_lock_key(nl):
+            WB.toggle_locked(self.cfg, CONFIG_PATH)
             self._layout_nav()
             self.refresh(force=True)
             print(f"[agenda] {'bloqueado' if self.cfg.get('locked') else 'desbloqueado'}", flush=True)
@@ -432,10 +343,10 @@ class AgendaWidget(Gtk.Application):
         if nl in ("h", "t"):
             self.go_today()
             return True
-        if name in ("plus", "KP_Add", "equal"):
+        if WB.is_bigger_key(name):
             self.resize_by(40)
             return True
-        if name in ("minus", "KP_Subtract"):
+        if WB.is_smaller_key(name):
             self.resize_by(-40)
             return True
         return False
@@ -451,8 +362,7 @@ class AgendaWidget(Gtk.Application):
         self.go_today()
 
     def act_lock(self, *_):
-        self.cfg["locked"] = not self.cfg.get("locked", False)
-        save_config(self.cfg)
+        WB.toggle_locked(self.cfg, CONFIG_PATH)
         self._layout_nav()
         self.refresh(force=True)
 

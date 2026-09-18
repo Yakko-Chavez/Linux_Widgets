@@ -1,3 +1,12 @@
+# Widgets Linux (estado local: no versionar tamanos/posiciones/cache)
+config.json
+agenda_config.json
+clima_config.json
+sysmon_config.json
+chrono_config.json
+.clima_cache.json
+.commandcode/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
