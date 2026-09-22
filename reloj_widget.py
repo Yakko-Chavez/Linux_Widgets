@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Widget de escritorio Rolex Submariner para Wayland + GNOME.
+"""Widget de escritorio Reloj Diver para Wayland + GNOME.
 
 Ventana GTK4 transparente, sin decoracion, solo visual.
 - Render offscreen con pycairo -> Gtk.Image (NO necesita python3-gi-cairo,
@@ -19,13 +19,13 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Gdk, GLib, Gtk
 
+import i18n
 import widget_base as WB
-from rolex_draw import draw_rolex
+from reloj_draw import draw_diver
 
-APP_ID = "com.vibes.rolex-widget"
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
-DEBUG = os.environ.get("ROLEX_DEBUG", "") == "1" or "--debug" in sys.argv
+APP_ID = "com.vibes.reloj-widget"
+CONFIG_PATH = WB.config_path("config.json")
+DEBUG = os.environ.get("RELOJ_DEBUG", "") == "1" or "--debug" in sys.argv
 if "--debug" in sys.argv:  # Gtk no conoce este flag, quitarlo antes de app.run
     sys.argv = [a for a in sys.argv if a != "--debug"]
 
@@ -67,18 +67,18 @@ def render_texture(size, scale=WB.SCALE):
     sec = (time.time() % 60) if sweep else float(t.tm_sec)
 
     def paint(cr):
-        draw_rolex(cr, size, size, t.tm_hour, t.tm_min, sec, t.tm_mday)
+        draw_diver(cr, size, size, t.tm_hour, t.tm_min, sec, t.tm_mday)
 
     return WB.render_texture(size, size, paint, scale=scale)
 
 
 CSS_DEBUG = """
-window.rolex { background-color: rgba(40,40,40,1); border: 4px solid red; }
-window.rolex picture { background-color: rgba(40,40,40,1); }
+window.reloj { background-color: rgba(40,40,40,1); border: 4px solid red; }
+window.reloj picture { background-color: rgba(40,40,40,1); }
 """
 
 
-class RolexWidget(Gtk.Application):
+class RelojWidget(Gtk.Application):
     def __init__(self):
         super().__init__(
             application_id=None if DEBUG else APP_ID,  # debug: permite varias instancias
@@ -90,19 +90,19 @@ class RolexWidget(Gtk.Application):
         self._timer_id = None
 
     def do_activate(self):
-        print("[rolex] activate: creando ventana...", flush=True)
+        print("[reloj] activate: creando ventana...", flush=True)
         if self.win:
-            print("[rolex] ventana ya existia, present...", flush=True)
+            print("[reloj] ventana ya existia, present...", flush=True)
             self.win.present()
             return
 
         size = int(self.cfg.get("size", 340))
         self.win = WB.make_window(
-            self, "rolex",
-            "Rolex Submariner" + (" [DEBUG]" if DEBUG else ""),
+            self, "reloj",
+            "Reloj Diver" + (" [DEBUG]" if DEBUG else ""),
             size, size, self.cfg, DEBUG,
         )
-        WB.install_css("rolex", DEBUG, debug_css=CSS_DEBUG)
+        WB.install_css("reloj", DEBUG, debug_css=CSS_DEBUG)
 
         self.image = WB.make_picture(size, size)
         self.win.set_child(self.image)
@@ -123,8 +123,8 @@ class RolexWidget(Gtk.Application):
         self.win.connect("notify::scale-factor", lambda *_: self.refresh())
 
         self.win.present()
-        print(f"[rolex] ventana presentada ({size}x{size}). Buscala como 'Rolex Submariner' con Alt+Tab.", flush=True)
-        print("[rolex] Si no la ves: cambia al workspace actual y mira Activities/Overview.", flush=True)
+        print(f"[reloj] ventana presentada ({size}x{size}). Buscala como 'Reloj Diver' con Alt+Tab.", flush=True)
+        print("[reloj] Si no la ves: cambia al workspace actual y mira Activities/Overview.", flush=True)
         self.refresh()
         self.restart_timer()
         # confirma que el timer sigue vivo y la ventana mapeada
@@ -141,11 +141,11 @@ class RolexWidget(Gtk.Application):
             tex = render_texture(size, scale=scale)
             self.image.set_paintable(tex)
             self.image.set_size_request(size, size)
-            if RolexWidget._frames_logged < 3:
-                RolexWidget._frames_logged += 1
-                print(f"[rolex] textura {size}px (buffer {size * scale}px, escala x{scale}) aplicada a Picture", flush=True)
+            if RelojWidget._frames_logged < 3:
+                RelojWidget._frames_logged += 1
+                print(f"[reloj] textura {size}px (buffer {size * scale}px, escala x{scale}) aplicada a Picture", flush=True)
         except Exception as e:
-            print(f"[rolex] ERROR render: {e}", file=sys.stderr, flush=True)
+            print(f"[reloj] ERROR render: {e}", file=sys.stderr, flush=True)
 
     def restart_timer(self):
         if self._timer_id:
@@ -162,9 +162,9 @@ class RolexWidget(Gtk.Application):
             mapped = self.win.get_mapped() if hasattr(self.win, "get_mapped") else "?"
             p = self.image.get_paintable()
             info = f"{p.get_intrinsic_width()}x{p.get_intrinsic_height()}" if p else "SIN-PAINTABLE"
-            print(f"[rolex] check 2s: mapped={mapped} paintable={info}", flush=True)
+            print(f"[reloj] check 2s: mapped={mapped} paintable={info}", flush=True)
         except Exception as e:
-            print(f"[rolex] check error: {e}", flush=True)
+            print(f"[reloj] check error: {e}", flush=True)
         return False
 
     # ---- interaccion ----
@@ -184,13 +184,14 @@ class RolexWidget(Gtk.Application):
         if n_press != 1 or self.cfg.get("locked"):
             return
         WB.popup_menu(self.image, x, y, self, [
-            ("Sweep suave ✓" if self.cfg.get("sweep") else "Sweep suave",
+            ("Smooth sweep ✓" if self.cfg.get("sweep") else "Smooth sweep",
              "sweep", self.act_sweep),
-            ("Bloquear clicks ✓" if self.cfg.get("locked") else "Bloquear clicks",
+            ("Lock clicks ✓" if self.cfg.get("locked") else "Lock clicks",
              "lock", self.act_lock),
-            ("Tamaño +", "bigger", self.act_bigger),
-            ("Tamaño −", "smaller", self.act_smaller),
-            ("Salir", "quit", self.act_quit),
+            ("Size +", "bigger", self.act_bigger),
+            ("Size −", "smaller", self.act_smaller),
+            ("Settings…", "settings", self.act_settings),
+            ("Quit", "quit", self.act_quit),
         ])
 
     def on_key(self, _ctl, keyval, _keycode, _state):
@@ -225,19 +226,39 @@ class RolexWidget(Gtk.Application):
     def act_smaller(self, *_):
         self.resize_by(-40)
 
+    def act_settings(self, *_):
+        WB.settings_dialog(self.win, self.cfg, [
+            ("size", "Size", "spin", (100, 600, 10, 0)),
+            ("opacity", "Opacity", "spin", (0.1, 1.0, 0.05, 2)),
+            ("sweep", "Smooth sweep", "switch", None),
+        ], self.apply_settings)
+
+    def apply_settings(self, cfg):
+        save_config(cfg)
+        try:
+            self.win.set_opacity(float(cfg.get("opacity", 1.0)))
+        except (TypeError, ValueError):
+            pass
+        size = int(cfg.get("size", 340))
+        self.win.set_default_size(size, size)
+        self.image.set_size_request(size, size)
+        self.restart_timer()
+        self.refresh()
+
     def act_quit(self, *_):
         self.quit()
 
     def resize_by(self, delta):
         size = max(100, min(600, int(self.cfg.get("size", 340)) + delta))
         self.cfg["size"] = size
+        save_config(self.cfg)
         self.win.set_default_size(size, size)
         self.refresh()
         self._save_position()
 
 
 def main():
-    app = RolexWidget()
+    app = RelojWidget()
     return app.run(sys.argv)
 
 

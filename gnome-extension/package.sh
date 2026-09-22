@@ -1,20 +1,27 @@
 #!/bin/bash
-# Instala/actualiza la extension desktop-widgets@yakko-chavez.github.io
-# (nivel usuario) con los widgets incluidos, y la activa.
+# Empaqueta la extension para extensions.gnome.org:
+# genera <uuid>.zip con metadata.json, extension.js, LICENSE y widgets/ en la
+# RAIZ del zip (formato que exige EGO y gnome-extensions install).
 set -euo pipefail
 
 UUID="desktop-widgets@yakko-chavez.github.io"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(dirname "$DIR")"
-DEST="$HOME/.local/share/gnome-shell/extensions/$UUID"
+OUT="$REPO/$UUID.zip"
+STAGE="$(mktemp -d)"
+trap 'rm -rf "$STAGE"' EXIT
 
-mkdir -p "$DEST/widgets" "$DEST/schemas"
+mkdir -p "$STAGE/widgets"
 cp "$DIR/$UUID/metadata.json" "$DIR/$UUID/extension.js" "$DIR/$UUID/LICENSE" \
-   "$DIR/$UUID/prefs.js" "$DEST/"
-cp "$DIR/$UUID/schemas/org.gnome.shell.extensions.desktop-widgets.gschema.xml" \
-   "$DEST/schemas/"
-glib-compile-schemas "$DEST/schemas"
+   "$DIR/$UUID/prefs.js" "$STAGE/"
 
+# Schema GSettings (el XML debe ir en el zip; EGO tambien espera el compilado)
+mkdir -p "$STAGE/schemas"
+cp "$DIR/$UUID/schemas/org.gnome.shell.extensions.desktop-widgets.gschema.xml" \
+   "$STAGE/schemas/"
+glib-compile-schemas "$STAGE/schemas"
+
+# Widgets Python (fuentes en la raiz del repo: unica fuente de verdad)
 WIDGETS_SRC=(
   i18n.py
   widget_base.py
@@ -31,13 +38,8 @@ EXAMPLES=(
   calc_config.example.json
 )
 for f in "${WIDGETS_SRC[@]}" "${EXAMPLES[@]}"; do
-  cp "$REPO/$f" "$DEST/widgets/"
+  cp "$REPO/$f" "$STAGE/widgets/"
 done
 
-echo "Copiada a $DEST"
-if gnome-extensions enable "$UUID"; then
-  echo "Extension activada: al arrancar lanza sola los widgets que falten."
-else
-  echo "No se pudo activar en caliente: cierra sesion y entra de nuevo, luego:"
-  echo "  gnome-extensions enable $UUID"
-fi
+( cd "$STAGE" && zip -qr "$OUT" . )
+echo "OK: $OUT"

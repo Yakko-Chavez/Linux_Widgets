@@ -2,9 +2,9 @@
 Type=Application
 Name=Agenda de Lujo Widget
 Comment=Calendario mensual estilo agenda de lujo para Wayland/GNOME
-Exec=python3 /home/chavezh/Vibes/Linux_Widgets/agenda_widget.py
-Path=/home/chavezh/Vibes/Linux_Widgets
-Icon=/home/chavezh/Vibes/Linux_Widgets/agenda-icon.png
+Exec=python3 /home/chavezh/Vibes/Widgets/Linux_Widgets/agenda_widget.py
+Path=/home/chavezh/Vibes/Widgets/Linux_Widgets
+Icon=/home/chavezh/Vibes/Widgets/Linux_Widgets/agenda-icon.png
 Terminal=false
 Categories=Utility;
 X-GNOME-Autostart-enabled=true

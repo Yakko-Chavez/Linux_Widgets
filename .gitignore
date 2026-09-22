@@ -7,6 +7,9 @@ chrono_config.json
 .clima_cache.json
 .commandcode/
 
+# Artefacto de gnome-extension/package.sh
+desktop-widgets@*.zip
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

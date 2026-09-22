@@ -1,7 +1,7 @@
-"""Dibujo vectorial estilo Rolex Submariner con Cairo.
+"""Dibujo vectorial de reloj de buceo (estilo diver) con Cairo.
 
-100% procedural, sin imagenes externas (evita temas de marca).
-Funcion: draw_rolex(cr, w, h, hour, minute, second_float, day)
+100% procedural, sin imagenes externas ni marcas registradas.
+Funcion: draw_diver(cr, w, h, hour, minute, second_float, day)
 """
 
 import math
@@ -36,24 +36,17 @@ def _text_centered(cr, cx, y, text, size, color=(0.92, 0.92, 0.9), bold=True, sp
     cr.restore()
 
 
-def _draw_crown_logo(cr, cx, y, s):
-    """Coronita simplificada estilo Rolex."""
+def _draw_dive_mark(cr, cx, y, s):
+    """Marca generica de buceo: triangulo de bisel."""
     cr.save()
     cr.set_source_rgb(0.92, 0.92, 0.9)
-    cr.set_line_width(max(1.0, s * 0.06))
+    cr.set_line_width(max(1.0, s * 0.14))
     cr.set_line_join(2)
-    # 5 puntas
-    pts = [(-1.0, 0.5), (-0.8, -0.3), (-0.4, 0.1), (0.0, -0.5), (0.4, 0.1), (0.8, -0.3), (1.0, 0.5)]
-    cr.move_to(cx + pts[0][0] * s, y + pts[0][1] * s)
-    for px, py in pts[1:]:
-        cr.line_to(cx + px * s, y + py * s)
-    cr.line_to(cx + 0.7 * s, y + 0.9 * s)
-    cr.line_to(cx - 0.7 * s, y + 0.9 * s)
+    cr.move_to(cx, y - s)
+    cr.line_to(cx - s, y + s * 0.7)
+    cr.line_to(cx + s, y + s * 0.7)
     cr.close_path()
     cr.stroke()
-    for dx in (-0.8, 0.0, 0.8):
-        _circle(cr, cx + dx * s, y - 0.45 * s, s * 0.09)
-        cr.fill()
     cr.restore()
 
 
@@ -70,7 +63,7 @@ def _draw_hand(cr, cx, cy, angle_rad, length, width, color, tail=0.0):
     cr.restore()
 
 
-def draw_rolex(cr, w, h, hour, minute, second_float, day):
+def draw_diver(cr, w, h, hour, minute, second_float, day):
     import cairo
 
     size = min(w, h)
@@ -144,10 +137,10 @@ def draw_rolex(cr, w, h, hour, minute, second_float, day):
     cr.translate(cx, cy)
     for i in range(60):
         if i in (10, 20, 30, 40, 50):
-            continue  # ahi va el numero, como en el Sub real
+            continue  # ahi va el numero, estilo diver clasico
         a = i * 6 * math.pi / 180
         is_five = (i % 5 == 0)
-        # solo primeros 15 min marcados fuerte como el Sub real; resto sutil
+        # solo primeros 15 min marcados fuerte; resto sutil
         r1 = r_bezel_out * 0.97 if is_five else r_bezel_out * 0.985
         r2 = r_bezel_out * 0.90 if is_five else r_bezel_out * 0.95
         cr.save()
@@ -258,12 +251,11 @@ def draw_rolex(cr, w, h, hour, minute, second_float, day):
     cr.restore()
 
     # --- Textos esfera ---
-    _draw_crown_logo(cr, cx, cy - r_dial * 0.38, r_dial * 0.055)
-    _text_centered(cr, cx, cy - r_dial * 0.20, "ROLEX", r_dial * 0.085)
-    _text_centered(cr, cx, cy - r_dial * 0.08, "OYSTER PERPETUAL", r_dial * 0.045, bold=False)
-    _text_centered(cr, cx, cy + r_dial * 0.30, "SUBMARINER", r_dial * 0.07)
+    _draw_dive_mark(cr, cx, cy - r_dial * 0.36, r_dial * 0.05)
+    _text_centered(cr, cx, cy - r_dial * 0.20, "DIVER", r_dial * 0.085)
+    _text_centered(cr, cx, cy - r_dial * 0.08, "AUTOMATIC", r_dial * 0.045, bold=False)
+    _text_centered(cr, cx, cy + r_dial * 0.30, "SUBMARINOS", r_dial * 0.07)
     _text_centered(cr, cx, cy + r_dial * 0.40, "1000ft = 300m", r_dial * 0.042, bold=False)
-    _text_centered(cr, cx, cy + r_dial * 0.48, "SUPERLATIVE CHRONOMETER", r_dial * 0.032, bold=False)
 
     # --- Ventana de fecha a las 3 ---
     cr.save()

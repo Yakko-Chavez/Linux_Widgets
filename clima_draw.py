@@ -11,6 +11,8 @@ Funcion: draw_clima(cr, w, h, data, locked=False)
 
 import math
 
+import i18n
+
 GOLD = (0.79, 0.64, 0.15)
 GOLD_LIGHT = (0.93, 0.82, 0.45)
 GOLD_DARK = (0.48, 0.37, 0.10)
@@ -44,22 +46,22 @@ def wmo_label(code):
     except (TypeError, ValueError):
         return "—"
     if c == 0:
-        return "Despejado"
+        return i18n._("Clear")
     if c in (1, 2):
-        return "Poco nuboso"
+        return i18n._("Partly cloudy")
     if c == 3:
-        return "Nublado"
+        return i18n._("Overcast")
     if c in (45, 48):
-        return "Niebla"
+        return i18n._("Fog")
     if c in (51, 53, 55, 56, 57):
-        return "Llovizna"
+        return i18n._("Drizzle")
     if c in (61, 63, 65, 66, 67, 80, 81, 82):
-        return "Lluvia"
+        return i18n._("Rain")
     if c in (71, 73, 75, 77, 85, 86):
-        return "Nieve"
+        return i18n._("Snow")
     if c in (95, 96, 99):
-        return "Tormenta"
-    return "Nublado"
+        return i18n._("Storm")
+    return i18n._("Overcast")
 
 
 def _draw_sun(cr, cx, cy, r):
@@ -256,9 +258,9 @@ def draw_clima(cr, w, h, data, locked=False):
             cr.stroke()
             cr.restore()
 
-    foot = f"Act. {updated}" if updated else ""
+    foot = i18n._("Upd. {t}", t=updated) if updated else ""
     if offline:
-        foot = (foot + " · sin conexión").strip(" ·")
+        foot = (foot + " · " + i18n._("offline")).strip(" ·")
     if foot:
         footer_size = max(6, min(10.5, h * 0.025))
         _text_centered(cr, w / 2, h - max(10, h * 0.03), foot, footer_size, MUTED,

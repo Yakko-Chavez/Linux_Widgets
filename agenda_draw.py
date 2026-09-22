@@ -9,6 +9,8 @@ Funcion: draw_agenda(cr, w, h, year, month, today_ymd, monday_first=True)
 import calendar
 import math
 
+import i18n
+
 GOLD = (0.79, 0.64, 0.15)
 GOLD_LIGHT = (0.93, 0.82, 0.45)
 GOLD_DARK = (0.48, 0.37, 0.10)
@@ -17,11 +19,12 @@ MUTED = (0.55, 0.52, 0.45)
 SUNDAY = (0.85, 0.55, 0.45)
 
 MESES = [
-    "", "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
-    "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE",
+    "", "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+    "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
 ]
 DIAS_LARGOS = [
-    "lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo",
+    "monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
+    "sunday",
 ]
 
 
@@ -172,7 +175,7 @@ def draw_agenda(cr, w, h, year, month, today_ymd, monday_first=True, locked=Fals
     hy = y0 + max(30, hh * 0.09)
     header_size = max(8, min(ww * 0.060, 24))
     _text_centered(
-        cr, x0 + ww / 2, hy, f"{MESES[month]} {year}",
+        cr, x0 + ww / 2, hy, f"{i18n._(MESES[month])} {year}",
         header_size, GOLD_LIGHT,
     )
     # botones dorados mes anterior / siguiente
@@ -200,7 +203,8 @@ def draw_agenda(cr, w, h, year, month, today_ymd, monday_first=True, locked=Fals
     cr.restore()
 
     # --- Nombres dias semana ---
-    week = ["L", "M", "M", "J", "V", "S", "D"] if monday_first else ["D", "L", "M", "M", "J", "V", "S"]
+    week = (i18n._("Week Letters MonFirst") if monday_first
+            else i18n._("Week Letters SunFirst")).split()
     grid_top = ly + max(18, hh * 0.05)
     grid_x = inner_x
     grid_w = inner_w
@@ -285,10 +289,11 @@ def draw_agenda(cr, w, h, year, month, today_ymd, monday_first=True, locked=Fals
     cr.line_to(x0 + ww - 18, fy - max(10, hh * 0.03))
     cr.stroke()
     wd = calendar.weekday(ty, tm, td)
-    wd_name = DIAS_LARGOS[wd]
+    wd_name = i18n._(DIAS_LARGOS[wd])
     footer_size = max(6, min(ww * 0.042, 15))
     _text_centered(cr, x0 + ww / 2, fy,
-                   f"Hoy · {wd_name} {td} de {MESES[tm].lower()}",
+                   i18n._("Today · {wd} {d} of {mon}",
+                          wd=wd_name, d=td, mon=i18n._(MESES[tm]).lower()),
                    footer_size, GOLD_LIGHT, bold=False)
     # rombo dibujado con paths (el glifo ◇ no existe en todas las Serif)
     cr.save()

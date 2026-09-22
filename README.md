@@ -1,8 +1,8 @@
 # Widgets de escritorio para Wayland (Ubuntu + GNOME)
 
-Rolex Submariner, Agenda de Lujo, Clima Dorado, Monitor Dorado y Cronógrafo
-Mecánico: ventanas GTK4 flotantes, sin bordes, dibujadas 100% en vectorial
-con Cairo. Sin imágenes externas.
+Reloj Diver, Agenda de Lujo, Clima Dorado, Monitor Dorado, Cronógrafo
+Mecánico y Calculadora Dorada: ventanas GTK4 flotantes, sin bordes, dibujadas
+100% en vectorial con Cairo. Sin imágenes externas y sin marcas registradas.
 
 > Nota Wayland/GNOME: `gtk-layer-shell` **no funciona en GNOME**. Son ventanas
 > GTK4 sin decoración, transparentes, que no roban foco. No quedan como fondo
@@ -19,13 +19,24 @@ con Cairo. Sin imágenes externas.
 - Movimiento por protocolo Wayland (`surface.begin_move()`); en GNOME también
   vale `Super + arrastrar`.
 - Doble-click / tecla `L`: bloquear (sin arrastre, sin menú; aparece candadito
-  dorado vectorial abajo-derecha en Agenda/Clima/Sysmon/Chrono).
+  dorado vectorial abajo-derecha en Agenda/Clima/Sysmon/Chrono, arriba-derecha
+  en la Calculadora).
 - Click derecho: menú contextual. `+ / −`: tamaño. `Q / Esc`: salir.
-- Config en JSON con sanitizado de rangos al cargar. La posición en pantalla
-  la recuerda la extensión `rolex-below@local` (ver abajo), no la app.
-- Modo `--debug` (o var. `ROLEX_DEBUG=1` / `AGENDA_DEBUG=1` / `CLIMA_DEBUG=1` /
-  `SYSMON_DEBUG=1` / `CHRONO_DEBUG=1`): ventana decorada para permitir varias instancias.
-- Autostart copiando el `.desktop` a `~/.config/autostart/`.
+- **Configuración…** en el menú: diálogo para tamaño/alto, opacidad y opciones
+  propias de cada widget (ciudad y coordenadas en el clima, sweep en el reloj,
+  semana en lunes en la agenda).
+- **Idiomas ES/EN**: menús, diálogos y textos dibujados (meses, clima,
+  DISCO/RED) siguen automáticamente el idioma del sistema (`i18n.py`).
+- Config en JSON con sanitizado de rangos al cargar, **por usuario** en
+  `~/.config/desktop-widgets/` (se siembra sola al primer arranque desde tu
+  config previa o desde el `*.example.json`). La posición en pantalla la
+  recuerda la extensión `desktop-widgets@yakko-chavez.github.io` (ver abajo),
+  no la app.
+- Modo `--debug` (o var. `RELOJ_DEBUG=1` / `AGENDA_DEBUG=1` / `CLIMA_DEBUG=1` /
+  `SYSMON_DEBUG=1` / `CHRONO_DEBUG=1` / `CALC_DEBUG=1`): ventana decorada para
+  permitir varias instancias.
+- Autostart opcional copiando el `.desktop` a `~/.config/autostart/` (con la
+  extensión activa no hace falta: ella lanza lo que falte).
 
 ## Requisitos
 
@@ -36,19 +47,19 @@ con Cairo. Sin imágenes externas.
 
 ---
 
-## 1. Rolex Submariner (`rolex_widget.py`)
+## 1. Reloj Diver (`reloj_widget.py`)
 
-Reloj analógico estilo Submariner: caja dorada con degradado radial, bisel
-negro con marcas y números 10–50, esfera con lume, coronita, textos
-(`ROLEX / OYSTER PERPETUAL / SUBMARINER / 1000ft = 300m`), ventana de fecha a
-las 3 con lupa, manecillas Mercedes/hora/minuto/segundero y reflejo de cristal.
+Reloj analógico de buceo: caja dorada con degradado radial, bisel negro con
+marcas y números 10–50, esfera con lume, marca triangular genérica, textos
+(`DIVER / AUTOMATIC / SUBMARINOS / 1000ft = 300m`), ventana de fecha a las 3
+con lupa, manecillas Mercedes/hora/minuto/segundero y reflejo de cristal.
 
 ### Uso
 
 ```bash
-python3 rolex_widget.py
+python3 reloj_widget.py
 # o
-./rolex.sh
+./reloj.sh
 ```
 
 ### Controles
@@ -58,7 +69,7 @@ python3 rolex_widget.py
 - **Doble click / tecla L**: bloquea o desbloquea (bloqueado = no arrastra ni abre menú).
 - **+ / −**: cambia tamaño (100–600px). **Q / Esc**: salir.
 
-### Config (`config.json`)
+### Config (`~/.config/desktop-widgets/config.json`)
 
 ```json
 { "size": 340, "sweep": true, "locked": false, "opacity": 1.0 }
@@ -70,9 +81,10 @@ python3 rolex_widget.py
 
 ### Archivos
 
-- `rolex_widget.py` — ventana, timer 50/1000ms, menú, drag.
-- `rolex_draw.py` — `draw_rolex(cr, w, h, hour, minute, second_float, day)`.
-- `config.json`, `rolex.sh`, `rolex-widget.desktop`, `requirements.txt`.
+- `reloj_widget.py` — ventana, timer 50/1000ms, menú, drag.
+- `reloj_draw.py` — `draw_diver(cr, w, h, hour, minute, second_float, day)`.
+- `reloj.sh`, `reloj-widget.desktop`, `requirements.txt`. Config por usuario
+  en `~/.config/desktop-widgets/config.json`.
 
 ---
 
@@ -145,15 +157,15 @@ python3 clima_widget.py
 { "city": "Puebla", "lat": 19.04778, "lon": -98.20723, "height": 540, "locked": false, "opacity": 1.0 }
 ```
 
-- Fetch cada 20 min en hilo + cache en `.clima_cache.json` (funciona offline,
-  muestra "· sin conexión").
-- Cambia `lat/lon/city` para otra ciudad y borra `.clima_cache.json` o pulsa `R`.
+- Fetch cada 20 min en hilo + cache en `~/.cache/desktop-widgets/.clima_cache.json`
+  (funciona offline, muestra "· sin conexión").
+- Cambia `lat/lon/city` para otra ciudad y borra la cache o pulsa `R`.
 
 ### Archivos
 
 - `clima_widget.py` — ventana, fetch Open-Meteo, cache, timer 60s.
 - `clima_draw.py` — `draw_clima(cr, w, h, data, locked)`, `wmo_label()`.
-- `clima_config.json`, `.clima_cache.json`, `run_clima.sh`, `clima-widget.desktop`.
+- `clima_config.json` (por usuario), `run_clima.sh`, `clima-widget.desktop`.
 
 ---
 
@@ -236,44 +248,128 @@ python3 chrono_widget.py
 
 ---
 
-## Modo "siempre atrás" + memoria de posición (extensión GNOME Shell)
+## 6. Calculadora Dorada (`calc_widget.py`)
+
+Calculadora científica con memoria: caja cuadrada redondeada a juego con
+Agenda/Clima, pantalla oscura con dígitos LUME y línea con la operación
+pendiente, indicador `M` y modo `DEG`/`RAD`. Teclado 6×7 vectorial: memoria
+(MC MR M− M+), científicas (sin cos tan ln log √ x² xʸ 1/x π e + DEG/RAD),
+operadores dorados, `C` con aro rojo, `=` alto (2 filas) y `0` de ancho
+completo. `%` = x/100; dominios inválidos (√ negativo, ÷0, tan 90°…) →
+`Error`.
+
+### Uso
+
+```bash
+python3 calc_widget.py
+# o
+./run_calc.sh
+```
+
+### Controles
+
+- **Teclas del widget** (botones GTK reales con glow dorado al pasar el mouse).
+- **Arrastrar** botón izquierdo para mover. **Doble click / L**: bloquear
+  (teclas insensibles, candadito dorado arriba-derecha).
+- **Click derecho**: menú (bloquear, tamaño, salir).
+- **Teclado físico**: `0-9 . + - * /`, `Enter`/`=`, `Backspace`,
+  `c`/`Delete` = C, `m` = MR. **Q / Esc**: salir.
+- Nota: `+`/`−` no redimensionan aquí (son operadores); el tamaño va por
+  menú o Configuración.
+
+### Config (`calc_config.json`)
+
+```json
+{ "size": 440, "locked": false, "opacity": 1.0, "angle": "DEG" }
+```
+
+- `size` se recorta a 300–700; `angle` = `DEG`/`RAD` (trigonometricas).
+- Sin estado persistente (ni memoria `M`).
+
+### Archivos
+
+- `calc_widget.py` — `CalcEngine` científico (puro, testeable), overlay de
+  teclas, menú, drag.
+- `calc_draw.py` — `draw_calc()`, `calc_button_zones()`, `KEY_GRID`.
+- `calc_config.json`, `run_calc.sh`, `calc-widget.desktop`.
+
+---
+
+## Lanzador + "siempre atrás" + memoria de posición (extensión GNOME Shell)
 
 Wayland no deja a una app ponerse debajo sola ni recordar su posición. La
-extensión `rolex-below@local` (fuente en `gnome-extension/`) mantiene los
-widgets al fondo de la pila (`lower()`), visibles en todos los escritorios
-(`stick()`) y **restaura la última posición** de cada uno al abrirlo
+extensión `desktop-widgets@yakko-chavez.github.io` (fuente en
+`gnome-extension/`) **lanza sola los 6 widgets** al activarse —solo los que no
+estén ya corriendo: si los abres por lanzador o autostart, simplemente los
+adopta—, los mantiene al fondo de la pila (`lower()`), visibles en todos los
+escritorios (`stick()`) y **restaura la última posición** de cada uno al abrirlo
 (estado en `~/.config/desktop-widgets/positions.json`).
 
-Instalación (solo la primera vez, GNOME detecta extensiones nuevas al iniciar sesión):
+Instalación local (solo la primera vez; GNOME detecta extensiones nuevas al iniciar sesión):
 
 ```bash
 ./gnome-extension/install-extension.sh
 # 1. Cierra sesión y vuelve a entrar (obligatorio en Wayland)
 # 2. Luego:
-gnome-extensions enable rolex-below@local
-python3 rolex_widget.py
+gnome-extensions enable desktop-widgets@yakko-chavez.github.io
 ```
 
-Para desactivar: `gnome-extensions disable rolex-below@local`.
+Para desactivar: `gnome-extensions disable desktop-widgets@yakko-chavez.github.io`.
+Al desactivarse termina los procesos que ella lanzó; los que abriste por tu
+cuenta siguen corriendo.
+
+**Preferencias**: desde el Gestor de Extensiones (o
+`gnome-extensions prefs desktop-widgets@yakko-chavez.github.io`) eliges con
+interruptores qué widgets lanza la extensión al activarse.
 
 Límites: queda debajo de las ventanas pero encima del wallpaper (no es fondo
 real). Activa "Bloquear clicks" (doble-click o tecla `L`) para que no estorbe
 al hacer clic en el escritorio.
 
-## Autostart en GNOME
+## Publicar en extensions.gnome.org (EGO)
+
+El zip que espera EGO se genera con:
 
 ```bash
-cp rolex-widget.desktop agenda-widget.desktop clima-widget.desktop sysmon-widget.desktop chrono-widget.desktop ~/.config/autostart/
+bash gnome-extension/package.sh   # -> desktop-widgets@yakko-chavez.github.io.zip
 ```
 
-(Revisa que `Exec=` apunte a tu ruta real.)
+Pasos:
+
+1. Push del repo a `https://github.com/Yakko-Chavez/Linux_Widgets` (público).
+2. Cuenta en `gitlab.gnome.org` y entra con ella en `https://extensions.gnome.org`.
+3. Sube el zip en `https://extensions.gnome.org/upload/`. Revisa antes las
+   [reglas de revisión](https://gjs.guide/extensions/review-guidelines/review-guidelines.html):
+   sin marcas registradas, scripts con licencia OSI (aquí MIT), procesos que
+   salen limpios, `metadata.json` bien formado y sin archivos innecesarios.
+4. **Screenshot** (la foto que muestra el Gestor de Extensiones): con los
+   widgets en pantalla pulsa `PrtScn` y recorta la zona; en la página de tu
+   extensión en EGO usa "Upload screenshot" para subir ese PNG/JPG.
+5. Atiende los comentarios de la revisión y vuelve a subir si te lo piden.
+
+El UUID (`desktop-widgets@yakko-chavez.github.io`) es la identidad permanente
+de la extensión en EGO: no lo cambies después de publicar.
+
+## Autostart en GNOME (opcional, sin extensión)
+
+```bash
+cp reloj-widget.desktop agenda-widget.desktop clima-widget.desktop sysmon-widget.desktop chrono-widget.desktop calc-widget.desktop ~/.config/autostart/
+```
+
+(Revisa que `Exec=` apunte a tu ruta real; los `*-widget-local.desktop` ya la
+llevan corregida.)
 
 ## Solución de problemas
 
-- **No veo la ventana**: buscar `Rolex Submariner` / `Agenda de Lujo` / `Clima Dorado` /
-  `Monitor Dorado` / `Cronógrafo Mecánico` con `Alt+Tab` o en Activities/Overview; probar con `--debug`.
+- **No veo la ventana**: buscar `Reloj Diver` / `Agenda de Lujo` / `Clima Dorado` /
+  `Monitor Dorado` / `Cronógrafo Mecánico` / `Calculadora Dorada` con `Alt+Tab` o
+  en Activities/Overview; probar con `--debug`.
 - **Parece "muerto" (no responde)**: está bloqueado — doble-click o tecla `L`.
-  Agenda/Clima/Sysmon/Chrono muestran candadito dorado cuando están bloqueados.
-- **Logs**: imprimen a stdout (`[rolex]…` / `[agenda]…` / `[clima]…` / `[sysmon]…` / `[chrono]…`).
+  Agenda/Clima/Sysmon/Chrono muestran candadito dorado cuando están bloqueados
+  (la Calculadora arriba-derecha).
+- **Logs**: imprimen a stdout (`[reloj]…` / `[agenda]…` / `[clima]…` / `[sysmon]…` / `[chrono]…` / `[calc]…`).
+- **La extensión no lanza nada**: mira los logs de gnome-shell
+  (`journalctl --user -u org.gnome.Shell@wayland.service | grep desktop-widgets`)
+  y confirma `python3-gi`, `gir1.2-gtk-4.0` y `python3-cairo`.
 - **Clima siempre offline**: revisa internet / `python3 -c "import urllib.request; print(urllib.request.urlopen('https://api.open-meteo.com/v1/forecast?latitude=19&longitude=-98&current=temperature_2m').status)"`.
 - **Sysmon en `--`**: `pip install psutil` o `sudo apt install python3-psutil`.

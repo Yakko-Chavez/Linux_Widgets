@@ -1,8 +1,8 @@
 # Widgets de escritorio — Wayland + GNOME
 
-Reloj Rolex Submariner, Agenda de Lujo, Clima Dorado, Monitor Dorado y
-Cronógrafo Mecánico: ventanas GTK4 flotantes, sin bordes, dibujadas 100%
-en vectorial con Cairo. Sin imágenes externas.
+Reloj Diver, Agenda de Lujo, Clima Dorado, Monitor Dorado, Cronógrafo
+Mecánico y Calculadora Dorada: ventanas GTK4 flotantes, sin bordes, dibujadas
+100% en vectorial con Cairo. Sin imágenes externas y sin marcas registradas.
 
 > Nota Wayland/GNOME: `gtk-layer-shell` **no funciona en GNOME**. Son ventanas
 > GTK4 sin decoración, transparentes, que no roban foco. No quedan como fondo
@@ -19,16 +19,33 @@ en vectorial con Cairo. Sin imágenes externas.
 - Movimiento por protocolo Wayland (`surface.begin_move()`); en GNOME también
   vale `Super + arrastrar`.
 - Doble-click / tecla `L`: bloquear (sin arrastre, sin menú, sin botones).
-  Agenda/Clima/Sysmon/Chrono dibujan candadito dorado vectorial abajo-derecha.
+  Agenda/Clima/Sysmon/Chrono dibujan candadito dorado vectorial abajo-derecha;
+  la Calculadora arriba-derecha.
 - Click derecho: menú contextual. `+ / −`: tamaño. `Q / Esc`: salir.
-- Config en JSON con sanitizado de rangos al cargar. La posición en pantalla
-  la recuerda la extensión `rolex-below@local`, no la app.
-- Autostart copiando el `.desktop` a `~/.config/autostart/`.
-- La extensión `rolex-below@local` (fuente en `gnome-extension/`, instalar con
+  "Configuración…" abre un diálogo (GTK, `WB.settings_dialog()`) para
+  tamaño/alto, opacidad y opciones propias (sweep, ciudad/lat/lon, lunes primero).
+- **Idiomas ES/EN** (`i18n.py`, sin gettext): claves en inglés + diccionario
+  "es"; el idioma se detecta de `LANGUAGE`/`LC_ALL`/`LANG` del sistema. Menús,
+  diálogos y textos dibujados (meses/días de agenda, descripciones WMO del
+  clima, DISCO/RED de sysmon) quedan cubiertos.
+- Config en JSON con sanitizado de rangos al cargar, **por usuario** en
+  `~/.config/desktop-widgets/` (se siembra sola al primer arranque desde la
+  config previa o el `*.example.json`). La posición en pantalla
+  la recuerda la extensión `desktop-widgets@yakko-chavez.github.io`, no la app.
+- Autostart opcional con el `.desktop` en `~/.config/autostart/` (con la
+  extensión activa no hace falta).
+- La extensión `desktop-widgets@yakko-chavez.github.io` (fuente en
+  `gnome-extension/`, instalar con
   `./gnome-extension/install-extension.sh` + cerrar sesión + `gnome-extensions
-  enable rolex-below@local`) los mantiene al fondo de la pila, visibles en
-  todos los escritorios (`lower()` + `stick()`) y **restaura su última
-  posición** (`~/.config/desktop-widgets/positions.json`).
+  enable desktop-widgets@yakko-chavez.github.io`) **lanza sola los widgets que
+  falten** (los ya corriendo los adopta), los mantiene al fondo de la pila,
+  visibles en todos los escritorios (`lower()` + `stick()`) y **restaura su
+  última posición** (`~/.config/desktop-widgets/positions.json`). Preferencias
+  de la extensión (qué widgets lanzar, schema GSettings
+  `org.gnome.shell.extensions.desktop-widgets` + `prefs.js`): botón de
+  engranaje en el Gestor de Extensiones o
+  `gnome-extensions prefs desktop-widgets@yakko-chavez.github.io`.
+  Empaquetado para EGO: `bash gnome-extension/package.sh`.
 
 ## Requisitos
 
@@ -39,19 +56,19 @@ en vectorial con Cairo. Sin imágenes externas.
 
 ---
 
-## 1. Rolex Submariner (`rolex_widget.py`)
+## 1. Reloj Diver (`reloj_widget.py`)
 
-Reloj analógico estilo Submariner: caja dorada con degradado radial, bisel
-negro con marcas y números 10–50, esfera con lume, coronita, textos
-(`ROLEX / OYSTER PERPETUAL / SUBMARINER / 1000ft = 300m`), ventana de fecha a
+Reloj analógico de buceo: caja dorada con degradado radial, bisel
+negro con marcas y números 10–50, esfera con lume, marca triangular genérica,
+textos (`DIVER / AUTOMATIC / SUBMARINOS / 1000ft = 300m`), ventana de fecha a
 las 3 con lupa, manecillas Mercedes/hora/minuto/segundero y reflejo de cristal.
 
 ### Uso
 
 ```bash
-python3 rolex_widget.py
+python3 reloj_widget.py
 # o
-./rolex.sh
+./reloj.sh
 ```
 
 ### Controles
@@ -64,7 +81,7 @@ python3 rolex_widget.py
 | `+` / `−` | Tamaño 100–600 px |
 | `Q` / `Esc` | Salir |
 
-### Config (`config.json`)
+### Config (`~/.config/desktop-widgets/config.json`)
 
 ```json
 { "size": 340, "sweep": true, "locked": false, "opacity": 1.0 }
@@ -76,10 +93,11 @@ python3 rolex_widget.py
 
 ### Archivos
 
-- `rolex_widget.py` — ventana, timer 50/1000 ms, menú, drag.
-  Función clave: `render_texture(size, scale)`; clase `RolexWidget(Gtk.Application)`.
-- `rolex_draw.py` — `draw_rolex(cr, w, h, hour, minute, second_float, day)`.
-- `config.json`, `rolex.sh`, `rolex-widget.desktop`, `requirements.txt`.
+- `reloj_widget.py` — ventana, timer 50/1000 ms, menú, drag.
+  Función clave: `render_texture(size, scale)`; clase `RelojWidget(Gtk.Application)`.
+- `reloj_draw.py` — `draw_diver(cr, w, h, hour, minute, second_float, day)`.
+- `reloj.sh`, `reloj-widget.desktop`, `requirements.txt`; config por usuario
+  en `~/.config/desktop-widgets/config.json`.
 
 ---
 
@@ -177,7 +195,7 @@ python3 clima_widget.py
 ```
 
 - `height` 100–750. Fetch en hilo cada 20 min (`FETCH_EVERY`) + cache en
-  `.clima_cache.json`. Sin red muestra `· sin conexión` con último cache.
+  `~/.cache/desktop-widgets/.clima_cache.json`. Sin red muestra `· sin conexión` con último cache.
 - `current_data()` sin fetch fresco marca `offline=True` para no fingir frescura.
 
 ### Detalles de implementación
@@ -193,7 +211,7 @@ python3 clima_widget.py
 
 - `clima_widget.py` — `fetch_weather()`, `parse_payload()`, `current_data()`.
 - `clima_draw.py` — `draw_clima()`, `wmo_label()`.
-- `clima_config.json`, `.clima_cache.json`, `run_clima.sh`, `clima-widget.desktop`.
+- `clima_config.json` (por usuario), `run_clima.sh`, `clima-widget.desktop`.
 
 ---
 
@@ -300,20 +318,96 @@ python3 chrono_widget.py
 
 ---
 
+## 6. Calculadora Dorada (`calc_widget.py`)
+
+Calculadora científica con memoria: caja cuadrada redondeada a juego con
+Agenda/Clima (filetes y remaches dorados), pantalla oscura con dígitos LUME,
+línea pequeña con la operación pendiente, indicador `M` de memoria y modo
+`DEG`/`RAD`. Teclado 6×7 dibujado en vectorial: memoria (MC MR M− M+),
+científicas (sin cos tan ln log, √ x² xʸ 1/x π e, conmutador DEG/RAD),
+operadores con filete dorado, `C` con aro rojo, `=` dorado sólido que ocupa
+2 filas y `0` de ancho completo. `%` = x/100; divisiones/raíces/dominios
+inválidos (√ de negativo, log de 0, tan 90°…) muestran `Error` (se limpia
+con `C`).
+
+### Uso
+
+```bash
+python3 calc_widget.py
+# o
+./run_calc.sh
+```
+
+### Controles
+
+| Acción | Efecto |
+|---|---|
+| Teclas del widget | Botones GTK reales sobre el dibujo (glow dorado en hover) |
+| Arrastrar (botón izq.) | Mover (bloqueado = no mueve) |
+| Click derecho | Menú: bloquear, tamaño ±, salir |
+| Doble-click / `L` | Bloquear (candadito vectorial arriba-derecha, teclas insensibles) |
+| `0-9` `.` `+ - * /` | Dígitos y operadores (teclado físico) |
+| `Enter` / `=` | Resultado (`=` encadena) |
+| `Backspace` | Borrar último dígito |
+| `c` / `Delete` | C (limpiar todo) |
+| `m` | MR (recuperar memoria) |
+| `Q` / `Esc` | Salir |
+
+Las teclas científicas (sin/cos/tan/ln/log/√/x²/xʸ/1/x/π/e/DEG) van por
+click; `DEG` conmuta grados/radianes y la tecla siempre muestra el modo
+actual (la pantalla también lo indica). Nota: a diferencia del resto de la
+colección, `+`/`−` no redimensionan aquí (son operadores); el tamaño va por
+menú o Configuración.
+
+### Config (`calc_config.json`)
+
+```json
+{ "size": 440, "locked": false, "opacity": 1.0, "angle": "DEG" }
+```
+
+- `size` se recorta a 300–700; `angle` es `DEG` o `RAD` (trigonometricas).
+- Sin estado persistente de cálculo: al cerrar se pierde la operación y la
+  memoria `M`.
+
+### Detalles de implementación
+
+- `CalcEngine` puro (sin GTK, testeable): `entry/acc/op/fresh/memory` +
+  `format_number()` que recorta artefactos float (`0.1+0.2 → 0.3`) y snap a
+  cero de residuos < 1e-10 (`sin(π)` en RAD no muestra `-0`).
+- Las funciones unarias operan sobre el display y respetan el operador
+  pendiente: `5 + √(25) =` da `10`.
+- `Gtk.Overlay` + 36 `Gtk.Button` transparentes (clase `key`) posicionados
+  por `_layout_buttons()` con `calc_button_zones()` de `calc_draw.py`; el
+  hueco entre teclas también es clickeable (zonas crecidas medio gap).
+- `draw_calc(cr, w, h, display, sub_display, has_memory, locked, angle_mode)`;
+  geometría del teclado compartida en `_keypad_geometry()` para que dibujo y
+  botones coincidan. Fuente `DejaVu Sans` explícita: la `Sans` genérica
+  (Noto) no trae `−` (U+2212), `⌫` (U+232B) ni `ʸ` (U+02B8).
+
+### Archivos
+
+- `calc_widget.py` — `CalcEngine`, overlay de teclas, menú, drag.
+- `calc_draw.py` — `draw_calc()`, `calc_button_zones()`, `KEY_GRID`.
+- `calc_config.json`, `run_calc.sh`, `calc-widget.desktop`.
+
+---
+
 ## Autostart en GNOME
 
 ```bash
-cp rolex-widget.desktop agenda-widget.desktop clima-widget.desktop sysmon-widget.desktop chrono-widget.desktop ~/.config/autostart/
+cp reloj-widget.desktop agenda-widget.desktop clima-widget.desktop sysmon-widget.desktop chrono-widget.desktop calc-widget.desktop ~/.config/autostart/
 ```
 
 (Revisar que `Exec=` apunte a la ruta real.)
 
 ## Solución de problemas
 
-- **No veo la ventana**: buscar `Rolex Submariner` / `Agenda de Lujo` / `Clima Dorado` /
-  `Monitor Dorado` / `Cronógrafo Mecánico` con `Alt+Tab` o en Activities/Overview; probar con `--debug`.
+- **No veo la ventana**: buscar `Reloj Diver` / `Agenda de Lujo` / `Clima Dorado` /
+  `Monitor Dorado` / `Cronógrafo Mecánico` / `Calculadora Dorada` con `Alt+Tab` o
+  en Activities/Overview; probar con `--debug`.
 - **Parece "muerto" (no responde)**: está bloqueado — doble-click o tecla `L`.
-  Agenda/Clima/Sysmon/Chrono muestran candadito dorado vectorial cuando están bloqueados.
-- **Logs**: todos imprimen a stdout (`[rolex]…` / `[agenda] vista -> …` / `[clima]…` / `[sysmon]…` / `[chrono]…`).
-- **Clima offline**: ver cache `.clima_cache.json` y probar URL Open-Meteo manual.
+  Agenda/Clima/Sysmon/Chrono muestran candadito dorado vectorial cuando están
+  bloqueados (la Calculadora arriba-derecha).
+- **Logs**: todos imprimen a stdout (`[reloj]…` / `[agenda] vista -> …` / `[clima]…` / `[sysmon]…` / `[chrono]…` / `[calc]…`).
+- **Clima offline**: ver cache `~/.cache/desktop-widgets/.clima_cache.json` y probar URL Open-Meteo manual.
 - **Sysmon sin datos**: instalar `psutil`; para GPU instalar driver NVIDIA + `nvidia-smi`.

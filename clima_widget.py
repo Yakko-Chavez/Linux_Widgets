@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Widget Clima Dorado para Wayland + GNOME (Puebla, Open-Meteo sin key).
 
-Misma filosofia que Rolex/Agenda/Monitor:
+Misma filosofia que Reloj/Agenda/Monitor:
 - Ventana GTK4 transparente, sin decoracion, que no roba foco.
 - Render offscreen con pycairo -> Gtk.Picture via Gdk.MemoryTexture.
 - Arrastre Wayland, click derecho con menu, doble-click/L bloqueo.
@@ -22,13 +22,14 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Gdk, GLib, Gtk
 
+import i18n
 import widget_base as WB
 from clima_draw import draw_clima
 
 APP_ID = "com.vibes.clima-widget"
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "clima_config.json")
-CACHE_PATH = os.path.join(BASE_DIR, ".clima_cache.json")
+CONFIG_PATH = WB.config_path("clima_config.json")
+CACHE_PATH = os.path.join(
+    GLib.get_user_cache_dir(), "desktop-widgets", ".clima_cache.json")
 DEBUG = os.environ.get("CLIMA_DEBUG", "") == "1" or "--debug" in sys.argv
 if "--debug" in sys.argv:
     sys.argv = [a for a in sys.argv if a != "--debug"]
@@ -49,7 +50,7 @@ DEFAULT_CONFIG = {
     "y": -1,
 }
 
-DOW_ES = ["LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM"]
+DOW = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
 
 _state = {"data": None, "offline": False, "updated": "", "fetching": False}
 
@@ -72,6 +73,7 @@ def save_config(cfg):
 
 def _save_cache(payload):
     try:
+        os.makedirs(os.path.dirname(CACHE_PATH), exist_ok=True)
         with open(CACHE_PATH, "w", encoding="utf-8") as f:
             json.dump(payload, f)
     except OSError:
@@ -111,7 +113,7 @@ def parse_payload(payload, city):
     for i in range(1, min(6, len(times))):
         try:
             dt = datetime.date.fromisoformat(times[i])
-            dow = DOW_ES[dt.weekday()]
+            dow = i18n._(DOW[dt.weekday()])
         except (ValueError, IndexError):
             dow = ""
         days.append({
@@ -285,12 +287,13 @@ class ClimaWidget(Gtk.Application):
         if n_press != 1 or self.cfg.get("locked"):
             return
         WB.popup_menu(self.image, x, y, self, [
-            ("Actualizar ahora", "now", self.act_now),
-            ("Bloquear clicks ✓" if self.cfg.get("locked") else "Bloquear clicks",
+            ("Refresh now", "now", self.act_now),
+            ("Lock clicks ✓" if self.cfg.get("locked") else "Lock clicks",
              "lock", self.act_lock),
-            ("Tamaño +", "bigger", self.act_bigger),
-            ("Tamaño −", "smaller", self.act_smaller),
-            ("Salir", "quit", self.act_quit),
+            ("Size +", "bigger", self.act_bigger),
+            ("Size −", "smaller", self.act_smaller),
+            ("Settings…", "settings", self.act_settings),
+            ("Quit", "quit", self.act_quit),
         ])
 
     def on_key(self, _ctl, keyval, _keycode, _state):
@@ -327,12 +330,37 @@ class ClimaWidget(Gtk.Application):
     def act_smaller(self, *_):
         self.resize_by(-40)
 
+    def act_settings(self, *_):
+        self._pre_loc = (self.cfg.get("city"), self.cfg.get("lat"),
+                         self.cfg.get("lon"))
+        WB.settings_dialog(self.win, self.cfg, [
+            ("city", "City", "entry", None),
+            ("lat", "Latitude", "spin", (-90.0, 90.0, 0.5, 4)),
+            ("lon", "Longitude", "spin", (-180.0, 180.0, 0.5, 4)),
+            ("height", "Height", "spin", (MIN_H, MAX_H, 10, 0)),
+            ("opacity", "Opacity", "spin", (0.1, 1.0, 0.05, 2)),
+        ], self.apply_settings)
+
+    def apply_settings(self, cfg):
+        WB.save_config(CONFIG_PATH, cfg)
+        try:
+            self.win.set_opacity(float(cfg.get("opacity", 1.0)))
+        except (TypeError, ValueError):
+            pass
+        h = int(cfg.get("height", DEFAULT_H))
+        self.win.set_default_size(int(h * ASPECT), h)
+        self.refresh()
+        if (self.cfg.get("city"), self.cfg.get("lat"), self.cfg.get("lon")
+                ) != self._pre_loc:
+            self.act_now()
+
     def act_quit(self, *_):
         self.quit()
 
     def resize_by(self, delta):
         h = max(MIN_H, min(MAX_H, int(self.cfg.get("height", DEFAULT_H)) + delta))
         self.cfg["height"] = h
+        WB.save_config(CONFIG_PATH, self.cfg)
         w = int(h * ASPECT)
         self.win.set_default_size(w, h)
         self.refresh()

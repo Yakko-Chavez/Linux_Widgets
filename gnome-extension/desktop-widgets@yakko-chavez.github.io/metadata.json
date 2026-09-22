@@ -1,7 +1,7 @@
 {
-  "uuid": "rolex-below@local",
-  "name": "Widgets: fondo + memoria de posición",
-  "description": "Mantiene los widgets (Rolex, Agenda, Clima, Monitor, Cronografo) al fondo, visibles en todos los escritorios y restaura su última posición.",
+  "uuid": "desktop-widgets@yakko-chavez.github.io",
+  "name": "Desktop Widgets",
+  "description": "Five luxury desktop widgets (dive watch, chronograph, weather, agenda, system monitor) kept at the bottom of the window stack on all workspaces, with position memory on Wayland.\n\nThe extension spawns the five bundled Python/GTK4 helper processes and terminates them in disable(). Widgets already running (e.g. started by the user) are adopted instead of replaced. Which widgets are launched is configurable from the extension preferences.\n\nRequires system packages: python3-gi, gir1.2-gtk-4.0 and python3-cairo (python3-psutil optional, for the system monitor). Nothing is installed automatically.",
   "shell-version": ["50"],
-  "version": 1
+  "url": "https://github.com/Yakko-Chavez/Linux_Widgets"
 }

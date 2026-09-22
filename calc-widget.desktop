@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Calculadora Dorada Widget
+Comment=Calculadora de escritorio para Wayland/GNOME
+Exec=/home/chavezh/Vibes/Widgets/Linux_Widgets/run_calc.sh
+Path=/home/chavezh/Vibes/Widgets/Linux_Widgets
+Icon=/home/chavezh/Vibes/Widgets/Linux_Widgets/calc-icon.png
+Terminal=false
+Categories=Utility;Calculator;
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+Keywords=calculator;calc;math;calculadora;

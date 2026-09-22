@@ -1,7 +1,7 @@
 """Dibujo vectorial estilo cronografo mecanico con Cairo.
 
 100% procedural, sin imagenes externas. Misma paleta oro/cuero que el
-Rolex Submariner y la Agenda de Lujo.
+Reloj Diver y la Agenda de Lujo.
 
 Funciones:
   draw_chrono(cr, w, h, elapsed_s, running, locked)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Widget de escritorio Agenda de Lujo para Wayland + GNOME.
 
-Misma filosofia que el Rolex Submariner:
+Misma filosofia que el Reloj Diver:
 - Ventana GTK4 transparente, sin decoracion, que no roba foco.
 - Render offscreen con pycairo -> Gtk.Picture via Gdk.MemoryTexture.
 - Arrastre Wayland, click derecho con menu, doble-click/L bloqueo.
@@ -18,12 +18,12 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Gdk, GLib, Gtk
 
+import i18n
 import widget_base as WB
 from agenda_draw import draw_agenda, header_arrow_zones
 
 APP_ID = "com.vibes.agenda-widget"
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "agenda_config.json")
+CONFIG_PATH = WB.config_path("agenda_config.json")
 DEBUG = os.environ.get("AGENDA_DEBUG", "") == "1" or "--debug" in sys.argv
 if "--debug" in sys.argv:
     sys.argv = [a for a in sys.argv if a != "--debug"]
@@ -306,14 +306,15 @@ class AgendaWidget(Gtk.Application):
         if n_press != 1 or self.cfg.get("locked"):
             return
         WB.popup_menu(self.image, x, y, self, [
-            ("Mes anterior", "prev", self.act_prev),
-            ("Mes siguiente", "next", self.act_next),
-            ("Ir a hoy", "today", self.act_today),
-            ("Bloquear clicks ✓" if self.cfg.get("locked") else "Bloquear clicks",
+            ("Previous month", "prev", self.act_prev),
+            ("Next month", "next", self.act_next),
+            ("Go to today", "today", self.act_today),
+            ("Lock clicks ✓" if self.cfg.get("locked") else "Lock clicks",
              "lock", self.act_lock),
-            ("Tamaño +", "bigger", self.act_bigger),
-            ("Tamaño −", "smaller", self.act_smaller),
-            ("Salir", "quit", self.act_quit),
+            ("Size +", "bigger", self.act_bigger),
+            ("Size −", "smaller", self.act_smaller),
+            ("Settings…", "settings", self.act_settings),
+            ("Quit", "quit", self.act_quit),
         ])
 
     def on_key(self, _ctl, keyval, _keycode, _state):
@@ -372,12 +373,30 @@ class AgendaWidget(Gtk.Application):
     def act_smaller(self, *_):
         self.resize_by(-40)
 
+    def act_settings(self, *_):
+        WB.settings_dialog(self.win, self.cfg, [
+            ("height", "Height", "spin", (MIN_H, MAX_H, 10, 0)),
+            ("monday_first", "Week starts Monday", "switch", None),
+            ("opacity", "Opacity", "spin", (0.1, 1.0, 0.05, 2)),
+        ], self.apply_settings)
+
+    def apply_settings(self, cfg):
+        WB.save_config(CONFIG_PATH, cfg)
+        try:
+            self.win.set_opacity(float(cfg.get("opacity", 1.0)))
+        except (TypeError, ValueError):
+            pass
+        h = int(cfg.get("height", DEFAULT_H))
+        self.win.set_default_size(int(h * ASPECT), h)
+        self.refresh(force=True)
+
     def act_quit(self, *_):
         self.quit()
 
     def resize_by(self, delta):
         h = max(MIN_H, min(MAX_H, int(self.cfg.get("height", DEFAULT_H)) + delta))
         self.cfg["height"] = h
+        WB.save_config(CONFIG_PATH, self.cfg)
         w = int(h * ASPECT)
         self.win.set_default_size(w, h)
         self.refresh(force=True)

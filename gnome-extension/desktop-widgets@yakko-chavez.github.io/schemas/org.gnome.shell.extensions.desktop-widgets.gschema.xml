@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.desktop-widgets"
+          path="/org/gnome/shell/extensions/desktop-widgets/">
+    <key name="launch-reloj" type="b">
+      <default>true</default>
+      <summary>Launch the dive watch</summary>
+      <description>Spawn the dive watch widget when the extension is enabled.</description>
+    </key>
+    <key name="launch-agenda" type="b">
+      <default>true</default>
+      <summary>Launch the agenda</summary>
+      <description>Spawn the agenda widget when the extension is enabled.</description>
+    </key>
+    <key name="launch-clima" type="b">
+      <default>true</default>
+      <summary>Launch the weather widget</summary>
+      <description>Spawn the weather widget when the extension is enabled.</description>
+    </key>
+    <key name="launch-sysmon" type="b">
+      <default>true</default>
+      <summary>Launch the system monitor</summary>
+      <description>Spawn the system monitor widget when the extension is enabled.</description>
+    </key>
+    <key name="launch-chrono" type="b">
+      <default>true</default>
+      <summary>Launch the chronograph</summary>
+      <description>Spawn the chronograph widget when the extension is enabled.</description>
+    </key>
+    <key name="launch-calc" type="b">
+      <default>true</default>
+      <summary>Launch the calculator</summary>
+      <description>Spawn the calculator widget when the extension is enabled.</description>
+    </key>
+  </schema>
+</schemalist>

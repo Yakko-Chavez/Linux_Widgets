@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Widget de escritorio Cronografo Mecanico para Wayland + GNOME.
 
-Misma filosofia que Rolex/Agenda/Clima/Monitor/Sysmon:
+Misma filosofia que Reloj/Agenda/Clima/Monitor/Sysmon:
 - Ventana GTK4 transparente, sin decoracion, que no roba foco.
 - Render offscreen con pycairo -> Gtk.Picture via Gdk.MemoryTexture.
 - Arrastre Wayland, click derecho con menu, doble-click/L bloqueo.
@@ -21,12 +21,12 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Gdk, GLib, Gtk
 
+import i18n
 import widget_base as WB
 from chrono_draw import chrono_button_zones, draw_chrono
 
 APP_ID = "com.vibes.chrono-widget"
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "chrono_config.json")
+CONFIG_PATH = WB.config_path("chrono_config.json")
 DEBUG = os.environ.get("CHRONO_DEBUG", "") == "1" or "--debug" in sys.argv
 if "--debug" in sys.argv:
     sys.argv = [a for a in sys.argv if a != "--debug"]
@@ -292,13 +292,14 @@ class ChronoWidget(Gtk.Application):
         if n_press != 1 or self.cfg.get("locked"):
             return
         WB.popup_menu(self.image, x, y, self, [
-            ("Pausar" if self.running() else "Iniciar", "go", self.act_go),
+            ("Pause" if self.running() else "Start", "go", self.act_go),
             ("Reset", "reset", self.act_reset),
-            ("Bloquear clicks ✓" if self.cfg.get("locked") else "Bloquear clicks",
+            ("Lock clicks ✓" if self.cfg.get("locked") else "Lock clicks",
              "lock", self.act_lock),
-            ("Tamaño +", "bigger", self.act_bigger),
-            ("Tamaño −", "smaller", self.act_smaller),
-            ("Salir", "quit", self.act_quit),
+            ("Size +", "bigger", self.act_bigger),
+            ("Size −", "smaller", self.act_smaller),
+            ("Settings…", "settings", self.act_settings),
+            ("Quit", "quit", self.act_quit),
         ])
 
     def on_key(self, _ctl, keyval, _keycode, _state):
@@ -346,6 +347,23 @@ class ChronoWidget(Gtk.Application):
 
     def act_smaller(self, *_):
         self.resize_by(-40)
+
+    def act_settings(self, *_):
+        WB.settings_dialog(self.win, self.cfg, [
+            ("size", "Size", "spin", (MIN_S, MAX_S, 10, 0)),
+            ("opacity", "Opacity", "spin", (0.1, 1.0, 0.05, 2)),
+        ], self.apply_settings)
+
+    def apply_settings(self, cfg):
+        save_config(cfg)
+        try:
+            self.win.set_opacity(float(cfg.get("opacity", 1.0)))
+        except (TypeError, ValueError):
+            pass
+        size = int(cfg.get("size", DEFAULT_S))
+        self.win.set_default_size(size, size)
+        self._layout_buttons()
+        self.refresh()
 
     def act_quit(self, *_):
         self.quit()

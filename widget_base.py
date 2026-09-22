@@ -19,6 +19,7 @@ Notas Wayland/GNOME verificadas (GTK 4.22):
 
 import json
 import os
+import shutil
 import sys
 
 import cairo
@@ -54,6 +55,31 @@ def widget_scale(win):
 
 
 # ---- config ----
+
+def config_path(filename):
+    """Ruta de config por usuario: ~/.config/desktop-widgets/<filename>.
+
+    Al primer arranque la siembra desde una config previa junto al script
+    (repo local) o desde su *.example.json (instalacion via extension), de
+    modo que cada usuario tenga la suya sin escribir en el codigo fuente.
+    """
+    user_path = os.path.join(
+        GLib.get_user_config_dir(), "desktop-widgets", filename)
+    if os.path.exists(user_path):
+        return user_path
+    try:
+        os.makedirs(os.path.dirname(user_path), exist_ok=True)
+        here = os.path.dirname(os.path.abspath(__file__))
+        stem, ext = os.path.splitext(filename)
+        for src in (os.path.join(here, filename),
+                    os.path.join(here, f"{stem}.example{ext}")):
+            if os.path.isfile(src):
+                shutil.copyfile(src, user_path)
+                break
+    except OSError as e:
+        print(f"No se pudo preparar config de usuario: {e}", file=sys.stderr)
+    return user_path
+
 
 def load_config(path, defaults, int_ranges=None, float_ranges=None):
     """Carga JSON sobre defaults y sanitiza rangos.
@@ -101,6 +127,72 @@ def save_config(path, cfg):
 
 
 # ---- render ----
+
+def settings_dialog(parent, cfg, specs, on_save):
+    """Dialogo de configuracion generico (GTK4, respuesta por senal).
+
+    specs: [(clave, etiqueta, tipo, extra)] con tipo:
+      - "spin":   extra = (min, max, step, digits); digits=0 -> valor int
+      - "switch": extra = None
+      - "entry":  extra = None
+    Al aceptar vuelca los valores en cfg y llama on_save(cfg): ahi cada
+    widget guarda su config y se refresca. Etiquetas via i18n.
+    """
+    import i18n
+
+    dlg = Gtk.Dialog(title=i18n._("Settings"), transient_for=parent, modal=True)
+    dlg.add_button(i18n._("Cancel"), Gtk.ResponseType.CANCEL)
+    dlg.add_button(i18n._("Apply"), Gtk.ResponseType.OK)
+    dlg.set_default_response(Gtk.ResponseType.OK)
+
+    grid = Gtk.Grid(
+        column_spacing=14, row_spacing=12,
+        margin_top=14, margin_bottom=14, margin_start=14, margin_end=14)
+    dlg.get_content_area().append(grid)
+
+    controls = {}
+    for row, (key, label, kind, extra) in enumerate(specs):
+        grid.attach(Gtk.Label(
+            label=i18n._(label), halign=Gtk.Align.START, hexpand=True,
+            margin_start=6), 0, row, 1, 1)
+        if kind == "spin":
+            lo, hi, step, digits = extra
+            ctrl = Gtk.SpinButton.new(
+                Gtk.Adjustment.new(float(cfg.get(key, lo)), lo, hi, step,
+                                   step * 10, 0),
+                1, digits)
+            ctrl.set_value(float(cfg.get(key, lo)))
+        elif kind == "switch":
+            ctrl = Gtk.Switch(active=bool(cfg.get(key)))
+            ctrl.set_halign(Gtk.Align.END)
+        else:  # entry
+            ctrl = Gtk.Entry()
+            ctrl.set_text(str(cfg.get(key, "")))
+            ctrl.set_width_chars(16)
+            ctrl.set_halign(Gtk.Align.END)
+        controls[key] = (kind, extra, ctrl)
+        grid.attach(ctrl, 1, row, 1, 1)
+
+    def _on_response(_dlg, resp):
+        if resp == Gtk.ResponseType.OK:
+            for key, (kind, _extra, ctrl) in controls.items():
+                if kind == "spin":
+                    _lo, _hi, _step, digits = _extra
+                    value = ctrl.get_value()
+                    cfg[key] = int(value) if digits == 0 else round(float(value), digits)
+                elif kind == "switch":
+                    cfg[key] = bool(ctrl.get_active())
+                else:
+                    cfg[key] = ctrl.get_text().strip()
+            try:
+                on_save(cfg)
+            except Exception as e:
+                print(f"settings: {e}", file=sys.stderr)
+        _dlg.destroy()
+
+    dlg.connect("response", _on_response)
+    dlg.present()
+
 
 def render_texture(width, height, paint, scale=SCALE):
     """Dibuja con paint(cr) en un buffer x escala y devuelve Gdk.MemoryTexture.
