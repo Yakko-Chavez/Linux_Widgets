@@ -5,6 +5,7 @@ Comment=Monitor CPU/RAM/VRAM/GPU/Disco estilo lujo para Wayland/GNOME
 Exec=/home/chavezh/Vibes/Widgets/Linux_Widgets/run_sysmon.sh
 Path=/home/chavezh/Vibes/Widgets/Linux_Widgets
 Icon=/home/chavezh/Vibes/Widgets/Linux_Widgets/sysmon-icon.png
+StartupWMClass=com.vibes.sysmon-widget
 Terminal=false
 Categories=System;Monitor;Utility;
 StartupNotify=false

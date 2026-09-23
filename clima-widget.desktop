@@ -5,6 +5,7 @@ Comment=Clima de Puebla estilo lujo para Wayland/GNOME (Open-Meteo)
 Exec=/home/chavezh/Vibes/Widgets/Linux_Widgets/run_clima.sh
 Path=/home/chavezh/Vibes/Widgets/Linux_Widgets
 Icon=/home/chavezh/Vibes/Widgets/Linux_Widgets/clima-icon.png
+StartupWMClass=com.vibes.clima-widget
 Terminal=false
 Categories=Utility;
 StartupNotify=false

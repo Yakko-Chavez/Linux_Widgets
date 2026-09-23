@@ -5,6 +5,7 @@ Comment=Cronógrafo mecánico de escritorio para Wayland/GNOME
 Exec=/home/chavezh/Vibes/Widgets/Linux_Widgets/run_chrono.sh
 Path=/home/chavezh/Vibes/Widgets/Linux_Widgets
 Icon=/home/chavezh/Vibes/Widgets/Linux_Widgets/chrono-icon.png
+StartupWMClass=com.vibes.chrono-widget
 Terminal=false
 Categories=Utility;Clock;
 StartupNotify=false

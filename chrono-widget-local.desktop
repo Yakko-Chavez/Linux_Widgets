@@ -5,6 +5,7 @@ Comment=Cronógrafo mecánico de escritorio para Wayland/GNOME
 Exec=python3 /home/chavezh/Vibes/Widgets/Linux_Widgets/chrono_widget.py
 Path=/home/chavezh/Vibes/Widgets/Linux_Widgets
 Icon=/home/chavezh/Vibes/Widgets/Linux_Widgets/chrono-icon.png
+StartupWMClass=com.vibes.chrono-widget
 Terminal=false
 Categories=Utility;
 X-GNOME-Autostart-enabled=true

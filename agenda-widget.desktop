@@ -5,6 +5,7 @@ Comment=Calendario mensual estilo agenda de lujo para Wayland/GNOME
 Exec=/home/chavezh/Vibes/Widgets/Linux_Widgets/run_agenda.sh
 Path=/home/chavezh/Vibes/Widgets/Linux_Widgets
 Icon=/home/chavezh/Vibes/Widgets/Linux_Widgets/agenda-icon.png
+StartupWMClass=com.vibes.agenda-widget
 Terminal=false
 Categories=Office;Calendar;
 StartupNotify=false

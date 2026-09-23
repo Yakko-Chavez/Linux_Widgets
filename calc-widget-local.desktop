@@ -5,6 +5,7 @@ Comment=Calculadora de escritorio para Wayland/GNOME
 Exec=python3 /home/chavezh/Vibes/Widgets/Linux_Widgets/calc_widget.py
 Path=/home/chavezh/Vibes/Widgets/Linux_Widgets
 Icon=/home/chavezh/Vibes/Widgets/Linux_Widgets/calc-icon.png
+StartupWMClass=com.vibes.calc-widget
 Terminal=false
 Categories=Utility;
 X-GNOME-Autostart-enabled=true
