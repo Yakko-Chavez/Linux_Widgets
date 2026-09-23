@@ -81,6 +81,7 @@ class CalcEngine:
         self.op = None
         self.memory = 0.0
         self.fresh = True   # el proximo digito reemplaza el display
+        self.last_expr = ""  # expresion resuelta, para la linea superior
         self.error = False
         self.angle_mode = "DEG"  # "DEG" | "RAD"
 
@@ -138,6 +139,7 @@ class CalcEngine:
         if self.fresh:
             self.entry = "0." if d == "." else d
             self.fresh = False
+            self.last_expr = ""
             return
         if d == ".":
             if "." not in self.entry:
@@ -163,6 +165,7 @@ class CalcEngine:
             self.acc = cur
         self.op = op
         self.fresh = True
+        self.last_expr = ""
 
     def equals(self):
         if self.error or self.op is None:
@@ -173,6 +176,8 @@ class CalcEngine:
         if _is_bad(r):
             self._set_error()
             return
+        self.last_expr = (
+            f"{format_number(self.acc)} {self.op} {format_number(cur)} =")
         self.entry = format_number(r)
         self.acc = None
         self.op = None
@@ -183,6 +188,7 @@ class CalcEngine:
         self.acc = None
         self.op = None
         self.fresh = True
+        self.last_expr = ""
         self.error = False
 
     def backspace(self):
@@ -301,10 +307,13 @@ class CalcEngine:
         return self.memory != 0.0
 
     def sub_text(self):
-        """Linea pequenia de la pantalla: operacion pendiente."""
-        if self.error or self.op is None or self.acc is None:
+        """Linea pequenia: expresion completa (operandos y operador)."""
+        if self.error:
             return ""
-        return f"{format_number(self.acc)} {self.op}"
+        if self.op is not None and self.acc is not None:
+            tail = "" if self.fresh else f" {self.entry}"
+            return f"{format_number(self.acc)} {self.op}{tail}"
+        return self.last_expr
 
 
 # Solo las teclas (el fondo transparente y el modo debug los genera la base).
