@@ -32,5 +32,10 @@
       <summary>Launch the calculator</summary>
       <description>Spawn the calculator widget when the extension is enabled.</description>
     </key>
+    <key name="launch-recordatorio" type="b">
+      <default>true</default>
+      <summary>Launch the reminder</summary>
+      <description>Spawn the reminder widget when the extension is enabled.</description>
+    </key>
   </schema>
 </schemalist>

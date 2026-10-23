@@ -14,6 +14,7 @@ const TITLES_ES = {
     'launch-sysmon': 'Monitor Dorado',
     'launch-chrono': 'Cronógrafo Mecánico',
     'launch-calc': 'Calculadora Dorada',
+    'launch-recordatorio': 'Recordatorio Dorado',
     group: 'Widgets a lanzar al activar la extensión',
 };
 
@@ -24,6 +25,7 @@ const TITLES_EN = {
     'launch-sysmon': 'System monitor',
     'launch-chrono': 'Chronograph',
     'launch-calc': 'Calculator',
+    'launch-recordatorio': 'Reminder',
     group: 'Widgets to launch when the extension is enabled',
 };
 
@@ -42,6 +44,7 @@ export default class DesktopWidgetsPreferences extends ExtensionPreferences {
             ['launch-sysmon', lang['launch-sysmon']],
             ['launch-chrono', lang['launch-chrono']],
             ['launch-calc', lang['launch-calc']],
+            ['launch-recordatorio', lang['launch-recordatorio']],
         ]) {
             const row = new Adw.SwitchRow({ title });
             settings.bind(key, row, 'active', Gio.SettingsBindFlags.DEFAULT);

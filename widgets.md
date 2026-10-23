@@ -1,7 +1,8 @@
 # Widgets de escritorio — Wayland + GNOME
 
 Reloj Diver, Agenda de Lujo, Clima Dorado, Monitor Dorado, Cronógrafo
-Mecánico y Calculadora Dorada: ventanas GTK4 flotantes, sin bordes, dibujadas
+Mecánico, Calculadora Dorada y Recordatorio Dorado: ventanas GTK4 flotantes,
+dibujadas
 100% en vectorial con Cairo. Sin imágenes externas y sin marcas registradas.
 
 > Nota Wayland/GNOME: `gtk-layer-shell` **no funciona en GNOME**. Son ventanas
@@ -19,15 +20,16 @@ Mecánico y Calculadora Dorada: ventanas GTK4 flotantes, sin bordes, dibujadas
 - Movimiento por protocolo Wayland (`surface.begin_move()`); en GNOME también
   vale `Super + arrastrar`.
 - Doble-click / tecla `L`: bloquear (sin arrastre, sin menú, sin botones).
-  Agenda/Clima/Sysmon/Chrono dibujan candadito dorado vectorial abajo-derecha;
-  la Calculadora arriba-derecha.
+  Agenda/Clima/Sysmon/Chrono/Recordatorio dibujan candadito dorado vectorial
+  abajo-derecha; la Calculadora arriba-derecha.
 - Click derecho: menú contextual. `+ / −`: tamaño. `Q / Esc`: salir.
   "Configuración…" abre un diálogo (GTK, `WB.settings_dialog()`) para
   tamaño/alto, opacidad y opciones propias (sweep, ciudad/lat/lon, lunes primero).
 - **Idiomas ES/EN** (`i18n.py`, sin gettext): claves en inglés + diccionario
   "es"; el idioma se detecta de `LANGUAGE`/`LC_ALL`/`LANG` del sistema. Menús,
   diálogos y textos dibujados (meses/días de agenda, descripciones WMO del
-  clima, DISCO/RED de sysmon) quedan cubiertos.
+  clima, notas y cuentas atrás del recordatorio, DISCO/RED de sysmon) quedan
+  cubiertos.
 - Config en JSON con sanitizado de rangos al cargar, **por usuario** en
   `~/.config/desktop-widgets/` (se siembra sola al primer arranque desde la
   config previa o el `*.example.json`). La posición en pantalla
@@ -392,10 +394,87 @@ menú o Configuración.
 
 ---
 
+## 7. Recordatorio Dorado (`recordatorio_widget.py`)
+
+Lista vertical de recordatorios puntuales con cuenta atrás en vivo: "en X
+minutos" o "a las HH:MM". Al vencer: **sirena estridente** (5 ciclos de dos
+notas 1200/900 Hz, WAV generado con `wave`+`math` y reproducido con
+`paplay`/`pw-play`/`aplay`, sin dependencias), **notificación de GNOME**
+(D-Bus, con acción "Posponer 5 min") y **destello dorado pulsante** en la
+fila.
+Estilo cuero negro + oro; filas con anillo de progreso, `✕` para borrar y
+botón `+` de alta. Los recordatorios **sobreviven reinicios** (epoch en la
+config); si venció con el widget cerrado, avisa al arrancar.
+
+### Uso
+
+```bash
+python3 recordatorio_widget.py
+# o
+./run_recordatorio.sh
+```
+
+### Controles
+
+| Acción | Efecto |
+|---|---|
+| Botón `+` / tecla `A` | Diálogo de alta: nota, "En minutos" (1–1440) o "A la hora" (`HH:MM`) |
+| `✕` en fila | Borrar recordatorio |
+| Acción "Posponer 5 min" de la notificación | Reprograma (+5 min) el recordatorio |
+| Arrastrar (botón izq.) | Mover (bloqueado = no mueve) |
+| Click derecho | Menú: nuevo, sonido on/off, limpiar avisos, bloquear, tamaño, salir |
+| Doble-click / `L` | Bloquear (candadito vectorial abajo-derecha, botones insensibles) |
+| `S` | Sonido on/off |
+| `+` / `−` | Alto 100–750 px (ancho = alto × 0.60) |
+| `Q` / `Esc` | Salir |
+
+### Config (`recordatorio_config.json`)
+
+```json
+{ "height": 520, "locked": false, "opacity": 1.0, "sound": true,
+  "reminders": [ { "note": "llamar a Juan", "target": 1766720000, "created": 1766718500, "id": "…” } ] }
+```
+
+- `target/created` como epoch UTC → los recordatorios persisten y se
+  reprograman solos tras "Posponer". Al arrancar, los ya vencidos notifican
+  "Venció con el widget cerrado" y se limpian.
+- Sin límite de recordatorios en config; se dibujan hasta 5 filas
+  (`+N more` si hay más), ordenadas por hora objetivo.
+- Timer 1 s (cuenta atrás); el destello del vencido se anima a 1 s.
+
+### Detalles de implementación
+
+- `recordatorio_button_zones(w, h, rems)` y la geometría de filas
+  (`geometry()/row_rects()`) se comparten entre dibujo y botones overlay
+  (regla del Calc/Agenda).
+- `parse_hhmm("14:30")` → epoch de hoy (o mañana si ya pasó);
+  `format_countdown()` da `04:12` / `1h 02m`.
+- Sonido: `~/.cache/desktop-widgets/alarm_tone.wav` se genera una vez;
+  lo reproduce el primero disponible entre `paplay`/`pw-play`/`aplay`
+  (`subprocess.Popen`), sin bloquear GTK. Si falta el WAV o el reproductor,
+  silencio sin romper.
+- Notificación: `Gio.DBusProxy` a `org.freedesktop.Notifications`
+  (`Notify` + señal `ActionInvoked` para posponer). Sin D-Bus, solo flash.
+- El recordatorio vencido permanece en la lista destellando hasta que se
+  borra (`✕`) o "Limpiar avisos" del menú.
+
+### Archivos
+
+- `recordatorio_widget.py` — ventana, timer 1 s, botones overlay, diálogo de
+  alta, tono WAV, notificador D-Bus. Clase clave: `ReminderWidget`.
+- `recordatorio_draw.py` — `draw_recordatorio()`, `recordatorio_button_zones()`,
+  `format_countdown()`, `parse_hhmm()`.
+- `recordatorio_config.example.json`, `run_recordatorio.sh`,
+  `recordatorio-widget.desktop`, `recordatorio-icon.png`.
+
+---
+
 ## Autostart en GNOME
 
 ```bash
-cp reloj-widget.desktop agenda-widget.desktop clima-widget.desktop sysmon-widget.desktop chrono-widget.desktop calc-widget.desktop ~/.config/autostart/
+cp reloj-widget.desktop agenda-widget.desktop clima-widget.desktop \
+   sysmon-widget.desktop chrono-widget.desktop calc-widget.desktop \
+   recordatorio-widget.desktop ~/.config/autostart/
 ```
 
 (Revisar que `Exec=` apunte a la ruta real.)
@@ -403,11 +482,15 @@ cp reloj-widget.desktop agenda-widget.desktop clima-widget.desktop sysmon-widget
 ## Solución de problemas
 
 - **No veo la ventana**: buscar `Reloj Diver` / `Agenda de Lujo` / `Clima Dorado` /
-  `Monitor Dorado` / `Cronógrafo Mecánico` / `Calculadora Dorada` con `Alt+Tab` o
+  `Monitor Dorado` / `Cronógrafo Mecánico` / `Calculadora Dorada` /
+  `Recordatorio Dorado` con `Alt+Tab` o
   en Activities/Overview; probar con `--debug`.
 - **Parece "muerto" (no responde)**: está bloqueado — doble-click o tecla `L`.
-  Agenda/Clima/Sysmon/Chrono muestran candadito dorado vectorial cuando están
-  bloqueados (la Calculadora arriba-derecha).
-- **Logs**: todos imprimen a stdout (`[reloj]…` / `[agenda] vista -> …` / `[clima]…` / `[sysmon]…` / `[chrono]…` / `[calc]…`).
+  Agenda/Clima/Sysmon/Chrono/Recordatorio muestran candadito dorado vectorial
+  cuando están bloqueados (la Calculadora arriba-derecha).
+- **Logs**: todos imprimen a stdout (`[reloj]…` / `[agenda] vista -> …` / `[clima]…` / `[sysmon]…` / `[chrono]…` / `[calc]…` / `[rec]…`).
+- **Recordatorio sin sonido**: comprobar `paplay`/`pw-play`/`aplay`
+  (`pactl info`) y el WAV en `~/.cache/desktop-widgets/alarm_tone.wav`
+  (se borra y se regenera solo).
 - **Clima offline**: ver cache `~/.cache/desktop-widgets/.clima_cache.json` y probar URL Open-Meteo manual.
 - **Sysmon sin datos**: instalar `psutil`; para GPU instalar driver NVIDIA + `nvidia-smi`.

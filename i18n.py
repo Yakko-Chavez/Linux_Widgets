@@ -80,6 +80,35 @@ _ES = {
     # ---- sysmon ----
     "DISK": "DISCO",
     "NET": "RED",
+    # ---- recordatorio ----
+    "Golden Reminder": "Recordatorio Dorado",
+    "Reminders": "Recordatorios",
+    "New reminder…": "Nuevo recordatorio…",
+    "Delete reminder": "Borrar recordatorio",
+    "No reminders": "Sin recordatorios",
+    "reminder": "recordatorio",
+    "in {t}": "en {t}",
+    "at {t}": "a las {t}",
+    "next {t}": "sigue {t}",
+    "now!": "¡ahora!",
+    "time's up!": "¡es la hora!",
+    "+{n} more": "+{n} más",
+    "Note": "Nota",
+    "In minutes": "En minutos",
+    "At time": "A la hora",
+    "Add": "Añadir",
+    "Invalid time (HH:MM 24 h)": "Hora inválida (HH:MM 24 h)",
+    "Reminder: {note}": "Recordatorio: {note}",
+    "Missed while the widget was off: {note}":
+        "Venció con el widget cerrado: {note}",
+    "Snooze 5 min": "Posponer 5 min",
+    "Sound on": "Sonido activado",
+    "Sound off": "Sonido desactivado",
+    "Sound ✓": "Sonido ✓",
+    "Sound ✗": "Sonido ✗",
+    "Clear alerts": "Limpiar avisos",
+    "{h}h {m:02d}m": "{h}h {m:02d}m",
+    "…": "…",
 }
 
 

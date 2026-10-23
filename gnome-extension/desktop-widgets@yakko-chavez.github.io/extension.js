@@ -35,6 +35,7 @@ const WIDGETS = [
     { appId: 'com.vibes.sysmon-widget', script: 'sysmon_widget.py', setting: 'launch-sysmon' },
     { appId: 'com.vibes.chrono-widget', script: 'chrono_widget.py', setting: 'launch-chrono' },
     { appId: 'com.vibes.calc-widget', script: 'calc_widget.py', setting: 'launch-calc' },
+    { appId: 'com.vibes.recordatorio-widget', script: 'recordatorio_widget.py', setting: 'launch-recordatorio' },
 ];
 
 const SCHEMA_ID = 'org.gnome.shell.extensions.desktop-widgets';
